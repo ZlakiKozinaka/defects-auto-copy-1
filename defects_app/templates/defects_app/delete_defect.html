@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Удаление дефекта</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+        }
+
+        .container {
+            width: 700px;
+            margin: 60px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #912d2d;
+        }
+
+        .warning {
+            background: #fbe4e4;
+            color: #912d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .info {
+            background: #f1edf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn,
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 220px;
+            height: 56px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: #d96b6b;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #d9d9d9;
+            color: black;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Удаление дефекта</h2>
+
+    <div class="warning">
+        Вы точно хотите удалить этот дефект? Восстановление будет невозможно.
+    </div>
+
+    <div class="info">
+        <p><strong>Автомобиль:</strong> {{ car.vin }}</p>
+        <p><strong>Дата дефекта:</strong> {{ defect.data|date:"d.m.Y H:i:s" }}</p>
+        <p><strong>Тип:</strong> {{ defect.tip }}</p>
+        <p><strong>Область:</strong> {{ defect.oblast }}</p>
+        <p><strong>Комментарий:</strong> {{ defect.kommentarij|default:"" }}</p>
+    </div>
+
+    <form method="post">
+        <input type="hidden" name="from_page" value="{{ from_page }}">
+        {% csrf_token %}
+        <button type="submit" class="btn">Удалить дефект</button>
+
+        {% if from_page == "okline" %}
+            <a href="/okline/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% elif from_page == "quality" %}
+            <a href="/quality/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% elif from_page == "vh1" %}
+            <a href="/vh1/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% elif from_page == "dovodka" %}
+            <a href="/dovodka/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% elif from_page == "dovodka" %}
+            <a href="/dovodka/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% else %}
+            <a href="/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+        {% endif %}
+    </form>
+</div>
+
+</body>
+</html>
+

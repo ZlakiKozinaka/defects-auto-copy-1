@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Выгрузки</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ВЫГРУЗКИ
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }}
+            <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <h2>Выгрузка дефектов</h2>
+                <p>Экспорт дефектов по выбранному периоду.</p>
+                <a href="/exports/defects/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>Выгрузка созданных машин</h2>
+                <p>Экспорт машин, созданных за смену, неделю, месяц или выбранный период.</p>
+                <a href="/exports/created-cars/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>Выгрузка машин на СНП</h2>
+                <p>Экспорт машин, отправленных на СНП за смену, неделю, месяц или выбранный период.</p>
+                <a href="/exports/snp-cars/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>Выгрузка полной информации о машинах</h2>
+                <p>Экспорт полной информации о машинах за выбранный период</p>
+                <a href="/exports/full-cars/" class="btn">Открыть</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

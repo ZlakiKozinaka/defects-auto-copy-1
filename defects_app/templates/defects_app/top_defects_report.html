@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Топ дефектов</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+        }
+
+        .top-links {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .top-links a {
+            color: black;
+            text-decoration: none;
+            margin: 0 12px;
+        }
+
+        .container {
+            width: 98%;
+            margin: 20px auto;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+            display: flex;
+            gap: 18px;
+            align-items: end;
+
+            margin-bottom: 20px;
+        }
+
+        .filters label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .filters input {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        .filters button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #b9a7cc;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 300px;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            font-size: 26px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 360px !important;
+        }
+
+        .summary {
+            line-height: 1.9;
+            font-size: 16px;
+        }
+
+        .summary h3 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+
+        .summary-value {
+            font-size: 26px;
+            font-weight: bold;
+            color: #8d2626;
+        }
+
+        .month-grid {
+            margin-top: 20px;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr 300px;
+            gap: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        th {
+            background: #e9e1f1;
+            text-align: left;
+        }
+
+        td:first-child,
+        td:last-child {
+            text-align: center;
+            font-weight: bold;
+            width: 70px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <h1>ТОП ДЕФЕКТОВ</h1>
+
+    <div class="top-links">
+        Пользователь: {{ request.user.username }}
+
+        <a href="{% url 'reports' %}">Все отчёты</a>
+        <a href="{% url 'qrqc_dashboard' %}">QRQC</a>
+        <a href="{% url 'manager_dashboard' %}">Панель начальника</a>
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="filters">
+
+        <div>
+            <label>Месяц</label>
+            <input type="month"
+                   id="monthPicker"
+                   value="{{ selected_month }}">
+        </div>
+
+        <div>
+            <label>День</label>
+            <input type="date"
+                   id="dayPicker"
+                   value="{{ selected_day }}">
+        </div>
+
+        <button onclick="loadTopDefects()">
+            Обновить отчёт
+        </button>
+
+    </div>
+
+    <div class="grid">
+
+        <div class="card">
+            <h2>V1 за день</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Тип дефекта</th>
+                        <th>Область</th>
+                        <th>Кол-во</th>
+                    </tr>
+                </thead>
+                <tbody id="dayV1Table"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>V2 за день</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Тип дефекта</th>
+                        <th>Область</th>
+                        <th>Кол-во</th>
+                    </tr>
+                </thead>
+                <tbody id="dayV2Table"></tbody>
+            </table>
+        </div>
+
+        <div class="card summary">
+
+            <h3>Краткая сводка</h3>
+
+            <div>
+                Дата:
+                <div class="summary-value" id="summaryDate">-</div>
+            </div>
+
+            <br>
+
+            <div>
+                V1 дефектов:
+                <div class="summary-value" id="summaryDayV1">0</div>
+            </div>
+
+            <br>
+
+            <div>
+                V2 дефектов:
+                <div class="summary-value" id="summaryDayV2">0</div>
+            </div>
+
+            <br>
+
+            <div>
+                Всего:
+                <div class="summary-value" id="summaryDayTotal">0</div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="month-grid">
+
+        <div class="card">
+            <h2>V1 за месяц</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Тип дефекта</th>
+                        <th>Область</th>
+                        <th>Кол-во</th>
+                    </tr>
+                </thead>
+                <tbody id="monthV1Table"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>V2 за месяц</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Тип дефекта</th>
+                        <th>Область</th>
+                        <th>Кол-во</th>
+                    </tr>
+                </thead>
+                <tbody id="monthV2Table"></tbody>
+            </table>
+        </div>
+
+        <div class="card summary">
+
+            <h3>Сводка месяца</h3>
+
+            <div>
+                Месяц:
+                <div class="summary-value" id="summaryMonth">-</div>
+            </div>
+
+            <br>
+
+            <div>
+                V1 дефектов:
+                <div class="summary-value" id="summaryMonthV1">0</div>
+            </div>
+
+            <br>
+
+            <div>
+                V2 дефектов:
+                <div class="summary-value" id="summaryMonthV2">0</div>
+            </div>
+
+            <br>
+
+            <div>
+                Всего:
+                <div class="summary-value" id="summaryMonthTotal">0</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+async function loadTopDefects() {
+    const month = document.getElementById("monthPicker").value;
+    const day = document.getElementById("dayPicker").value;
+
+    const response = await fetch(
+        `/reports/top-defects/api/?month=${month}&day=${day}`
+    );
+
+    const data = await response.json();
+
+    buildTables(data);
+    updateSummary(data);
+}
+
+function buildTables(data) {
+    buildTable("dayV1Table", data.day_report.v1);
+    buildTable("dayV2Table", data.day_report.v2);
+    buildTable("monthV1Table", data.month_report.v1);
+    buildTable("monthV2Table", data.month_report.v2);
+}
+
+function buildTable(tableId, items) {
+    const tbody = document.getElementById(tableId);
+    tbody.innerHTML = "";
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center;">Данных нет</td>
+            </tr>
+        `;
+        return;
+    }
+
+    items.forEach(function(item, index) {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.tip__nazvanie || ""}</td>
+            <td>${item.oblast__nazvanie || ""}</td>
+            <td>${item.count}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+function updateSummary(data) {
+    document.getElementById("summaryDate").innerText =
+        data.selected_day;
+
+    document.getElementById("summaryDayV1").innerText =
+        data.day_report.total_v1;
+
+    document.getElementById("summaryDayV2").innerText =
+        data.day_report.total_v2;
+
+    document.getElementById("summaryDayTotal").innerText =
+        data.day_report.total;
+
+    document.getElementById("summaryMonth").innerText =
+        data.month;
+
+    document.getElementById("summaryMonthV1").innerText =
+        data.month_report.total_v1;
+
+    document.getElementById("summaryMonthV2").innerText =
+        data.month_report.total_v2;
+
+    document.getElementById("summaryMonthTotal").innerText =
+        data.month_report.total;
+}
+
+loadTopDefects();
+
+</script>
+
+</body>
+</html>

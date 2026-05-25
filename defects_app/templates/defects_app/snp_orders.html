@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    {% load static %}
+    <title>СНП — номера заказов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            flex: 1;
+        }
+
+        .field label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .secondary-btn {
+            background: #d8cce4;
+        }
+
+        .disabled-input {
+            background: #e5e5e5;
+            color: #777;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dff3e2;
+            color: #216a2f;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e7dff0;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        .small-note {
+            font-size: 13px;
+            color: #555;
+            margin-top: 6px;
+        }
+
+        .status-fixed {
+            color: #216a2f;
+            font-weight: bold;
+        }
+
+        .status-open {
+            color: #912d2d;
+            font-weight: bold;
+        }
+
+        .vin-preview {
+            margin-top: 15px;
+        }
+
+        .vin-boxes {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .vin-cell {
+            width: 32px;
+            height: 42px;
+            border: 1px solid #999;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        СНП — НОМЕРА ЗАКАЗОВ
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }} |
+            Станция: {{ request.session.station_name }} |
+            Смена: {{ request.session.shift_name }}
+
+            {% if is_manager %}
+                <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            {% endif %}
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="find">
+
+                <div class="row">
+                    <div class="field">
+                        <label for="{{ form.vin.id_for_label }}">VIN</label>
+                        {{ form.vin }}
+                        {{ form.vin.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.model.id_for_label }}">Модель</label>
+                        {{ form.model }}
+                        {{ form.model.errors }}
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn">Найти</button>
+                        <a href="/snp-orders/" class="btn secondary-btn">Очистить</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="vin-preview">
+                <div><strong>Визуальное отображение VIN:</strong></div>
+                <div class="vin-boxes" id="vin-boxes"></div>
+            </div>
+
+            {% if car %}
+                <div style="margin-top: 15px; font-size: 18px; font-weight: bold;">
+                    Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if car %}
+            <div class="block">
+                <h3>Дефекты машины на СНП</h3>
+
+                {% if defects %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save_orders">
+                        <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>Дефект</th>
+                                    <th>Статус</th>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Номер заказа</th>
+                                    <th>Кто внёс / изменил</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for defect in defects %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>Дефект {{ defect.id }}</td>
+
+                                        <td>
+                                            {% if defect.ustraneno %}
+                                                <span class="status-fixed">Устранен</span>
+                                            {% else %}
+                                                <span class="status-open">Не устранен</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>{{ defect.tip }}</td>
+                                        <td>{{ defect.oblast }}</td>
+
+                                        <td>
+                                            {% if defect.ustraneno %}
+                                                <input type="text"
+                                                       value="{% if defect.snp_order %}{{ defect.snp_order.order_number }}{% endif %}"
+                                                       disabled
+                                                       class="disabled-input">
+                                            {% else %}
+                                                {% if defect.snp_order and not is_manager %}
+                                                    <input type="text"
+                                                           value="{{ defect.snp_order.order_number }}"
+                                                           disabled
+                                                           class="disabled-input">
+                                                    <div class="small-note">Изменение доступно только начальнику</div>
+                                                {% else %}
+                                                    <input type="text"
+                                                           name="order_{{ defect.id }}"
+                                                           value="{% if defect.snp_order %}{{ defect.snp_order.order_number }}{% endif %}">
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {% if defect.snp_order %}
+                                                Внёс: {{ defect.snp_order.kto_sozdal }}<br>
+                                                {{ defect.snp_order.data_sozdaniya|date:"d.m.Y H:i:s" }}
+
+                                                {% if defect.snp_order.kto_izmenil %}
+                                                    <br><br>
+                                                    Изменил: {{ defect.snp_order.kto_izmenil }}<br>
+                                                    {{ defect.snp_order.data_izmeneniya|date:"d.m.Y H:i:s" }}
+                                                {% endif %}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 20px;">
+                            <button type="submit" class="btn">Сохранить номера заказов</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p>Для этой машины дефекты не найдены.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="{% static 'js/vin_prefixes.js' %}"></script>
+
+    <script>
+        initVinLogic("id_vin", "id_model", "vin-boxes");
+    </script>
+</body>
+</html>

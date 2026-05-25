@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ошибка доступа</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f5f3f8; margin:0; }
+        .box {
+            max-width: 760px; margin: 80px auto; background:#fff; border-left:8px solid #b9a7cc;
+            border-radius:12px; padding:24px; box-shadow:0 3px 12px rgba(0,0,0,.12);
+        }
+        h1 { margin-top:0; font-size:30px; }
+        p { font-size:17px; color:#333; line-height:1.5; }
+        .btn {
+            display:inline-block; margin-right:10px; margin-top:12px; padding:10px 16px;
+            background:#b9a7cc; color:#000; text-decoration:none; border-radius:8px;
+        }
+        .btn:hover { background:#a48fbc; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>У вас нет доступа к этой операции</h1>
+        <p>Проверьте, что выбран правильный отдел, и попробуйте снова.</p>
+        <p>Если ошибка повторяется — обновите страницу входа и авторизуйтесь заново.</p>
+
+        <a class="btn" href="/accounts/login/">На страницу входа</a>
+        <a class="btn" href="/department-hub/">К выбору отдела</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Отчёты</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        .card p {
+            color: #555;
+            min-height: 45px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ОТЧЁТЫ
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }}
+            <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <h2>QR QC отчёт</h2>
+                <p>Основной дашборд качества, OEE, простои, дефекты, СНП, OKLine и производственные показатели.</p>
+                <a href="/reports/qrqc/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>OEE отчёт</h2>
+                <p>Подробный отчёт по эффективности работы линии, плану, факту и простоям.</p>
+                <a href="/reports/oee/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>Дефекты по отделам</h2>
+                <p>Подробный отчет по количеству дефектов на каждый отдел.</p>
+                <a href="/reports/defect-types/" class="btn">Открыть</a>
+            </div>
+
+            <div class="card">
+                <h2>Будущий отчёт</h2>
+                <p>Место под следующий отчёт.</p>
+                <button class="btn" type="button">Позже</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Печать отчета СГП</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page {
+            width: 100%;
+            min-height: 260mm;
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .vin-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            font-size: 16px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .no-print {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #b9a7cc;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .aggregate-col {
+            width: 35%;
+        }
+
+        .value-col {
+            width: 65%;
+        }
+
+        .value-cell {
+            min-height: 50px;
+            font-size: 16px;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">Печать</button>
+        <a href="/okline/?car_id={{ car.id }}" class="btn">Вернуться</a>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">VIN: {{ car.vin }}</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Станция</th>
+                    <th>Дефект</th>
+                    <th>Грейд</th>
+                    <th>Ответственный</th>
+                    <th>Кто отремонтировал и когда</th>
+                    <th>Кто подтвердил и когда</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for defect in defects %}
+                <tr>
+                    <td>{{ defect.mesto|default:"" }}</td>
+                    <td>
+                        {{ defect.tip|default:"" }}
+                        {% if defect.kommentarij %}
+                            <br><br>{{ defect.kommentarij }}
+                        {% endif %}
+                    </td>
+                    <td>{{ defect.greyd|default:"" }}</td>
+                    <td>{{ defect.otvetstvennyj|default:"" }}</td>
+                    <td>
+                        {% if defect.kto_ustranil %}
+                            {{ defect.kto_ustranil }}
+                            {% if defect.data_ustraneniya %}
+                                <br>{{ defect.data_ustraneniya|date:"d.m.Y H:i:s" }}
+                            {% endif %}
+                        {% elif defect.sgp_approval %}
+                            Согласовано<br>
+                            {{ defect.sgp_approval.approved_by }}<br>
+                            {{ defect.sgp_approval.approved_at|date:"d.m.Y H:i:s" }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if defect.kto_razreshil %}
+                            {{ defect.kto_razreshil }}
+                            {% if defect.data_razresheniya %}
+                                <br>{{ defect.data_razresheniya|date:"d.m.Y H:i:s" }}
+                            {% endif %}
+                        {% elif defect.sgp_approval %}
+                            Согласовано<br>
+                            {{ defect.sgp_approval.approved_by }}<br>
+                            {{ defect.sgp_approval.approved_at|date:"d.m.Y H:i:s" }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center;">Дефекты отсутствуют</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">VIN: {{ car.vin }}</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="aggregate-col">Агрегат</th>
+                    <th class="value-col">Штрих код / номер</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aggregate in aggregates %}
+                <tr>
+                    <td>{{ aggregate.name }}</td>
+                    <td class="value-cell">{{ aggregate.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        window.onload = function () {
+            setTimeout(function () {
+                window.print();
+            }, 300);
+        };
+    </script>
+</body>
+</html>

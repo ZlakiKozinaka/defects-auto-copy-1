@@ -1,0 +1,327 @@
+<!-- defects_app/templates/defects_app/upload_plan_vin.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Загрузка плановых VIN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            background: #b9a7cc;
+            color: black;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .disabled-btn {
+            background: #d7d7d7;
+            color: #666;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: not-allowed;
+            font-size: 14px;
+        }
+
+        .file-input {
+            padding: 10px;
+            background: #f7f4fa;
+            border: 1px solid #c8b7d8;
+            border-radius: 8px;
+            font-size: 15px;
+            width: 420px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .upload-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dff3e2;
+            color: #216a2f;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-window {
+            width: 760px;
+            max-width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+        }
+
+        .modal-window h2 {
+            margin-top: 0;
+        }
+
+        .error-box {
+            background: #fbe4e4;
+            color: #912d2d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .warning-box {
+            background: #fff4d6;
+            color: #7a5300;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .ok-box {
+            background: #dff3e2;
+            color: #216a2f;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .error-box ul,
+        .warning-box ul {
+            margin-bottom: 0;
+            padding-left: 22px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 14px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    ЗАГРУЗКА ПЛАНОВЫХ VIN
+</div>
+
+<div class="container">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="block">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="check">
+
+            <p><strong>Выберите Excel-файл с будущими VIN:</strong></p>
+
+            <input type="file"
+                   name="excel_file"
+                   class="file-input"
+                   accept=".xlsx,.xlsm"
+                   required>
+
+            <p><strong>ОТТС (обязательно):</strong></p>
+
+            <input type="text"
+                name="otts"
+                class="file-input"
+                placeholder="Например: ТС RU Е-RU.МТ02.01337"
+                value="{{ last_otts|default:'' }}"
+                required>
+
+            <div class="upload-actions">
+                <button type="submit" class="btn">Проверить файл</button>
+                <a href="/manager/" class="btn">Назад</a>
+            </div>
+        </form>
+    </div>
+
+    {% if preview_data %}
+        <div class="modal-overlay">
+            <div class="modal-window">
+                <h2>Проверка файла перед загрузкой</h2>
+
+                <p><strong>Файл:</strong> {{ preview_data.file_name }}</p>
+                <p><strong>Найдено строк:</strong> {{ preview_data.total_rows }}</p>
+
+                {% if preview_data.errors %}
+                    <div class="error-box">
+                        <strong>Обнаружены ошибки:</strong>
+                        <ul>
+                            {% for error in preview_data.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="ok-box">
+                        Ошибки не обнаружены.
+                    </div>
+                {% endif %}
+
+                {% if preview_data.warnings %}
+                    <div class="warning-box">
+                        <strong>Предупреждения:</strong>
+                        <ul>
+                            {% for warning in preview_data.warnings %}
+                                <li>{{ warning }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="upload-actions">
+                    {% if not preview_data.errors %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="import">
+                            <button type="submit" class="btn">Загрузить в базу</button>
+                        </form>
+                    {% else %}
+                        <button type="button" class="disabled-btn">Загрузить в базу</button>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="cancel">
+                        <button type="submit" class="btn">Отмена</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="block">
+        <h3>Всего VIN в накопительной таблице: {{ total_count }}</h3>
+
+        <h3>Последние загруженные записи</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>№ партии</th>
+                    <th>№ лота</th>
+                    <th>Модель</th>
+                    <th>VIN</th>
+                    <th>Цвет кузова</th>
+                    <th>Цвет салона</th>
+                    <th>Комплектация</th>
+                    <th>Файл</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in last_items %}
+                    <tr>
+                        <td>{{ item.id }}</td>
+                        <td>{{ item.nomer_partii }}</td>
+                        <td>{{ item.nomer_lota }}</td>
+                        <td>{{ item.model }}</td>
+                        <td>{{ item.vin }}</td>
+                        <td>{{ item.cvet_kuzova }}</td>
+                        <td>{{ item.cvet_salona }}</td>
+                        <td>{{ item.komplektaciya }}</td>
+                        <td>{{ item.file_name }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="9">Пока ничего не загружено.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

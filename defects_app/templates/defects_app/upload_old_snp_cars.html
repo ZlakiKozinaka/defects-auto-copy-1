@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Загрузка старых машин на СНП</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+            color: black;
+            text-decoration: none;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #f3f0f7;
+        }
+
+        .success-title {
+            color: green;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .error-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff0f0;
+            border: 1px solid #ffb3b3;
+            border-radius: 8px;
+            color: #b00020;
+        }
+
+
+        .upload-box {
+            border: 2px dashed #c9b6df;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #faf8fc;
+            margin-bottom: 25px;
+        }
+
+        .upload-box input[type="file"] {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .info-text {
+            margin-top: 15px;
+            color: #666;
+            font-size: 15px;
+        }
+
+        .result-box {
+            background: #f8f6fb;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .result-item.success {
+            color: #2e7d32;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .errors {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #fff1f1;
+            border: 1px solid #f0b6b6;
+        }
+
+        .errors h3 {
+            margin-top: 0;
+            color: #b00020;
+        }
+
+        .errors ul {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ЗАГРУЗКА СТАРЫХ МАШИН НА СНП
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }} |
+            Станция: {{ request.session.station_name }} |
+            Смена: {{ request.session.shift_name }}
+
+            {% if is_manager %}
+                <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            {% endif %}
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">    
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="upload-box">
+
+            <input type="file" name="excel_file" accept=".xlsx" required>
+
+            <br>
+
+            <button type="submit" class="btn">
+                Загрузить файл
+            </button>
+
+            <div class="info-text">
+                Поддерживается только формат .xlsx
+            </div>
+
+        </div>
+    </form>
+
+    {% if result %}
+        <div class="result-box">
+
+            <div class="result-item success">
+                Загрузка завершена
+            </div>
+
+            <div class="result-item">
+                Создано машин: <b>{{ result.created_cars }}</b>
+            </div>
+
+            <div class="result-item">
+                Пропущено существующих: <b>{{ result.skipped_existing }}</b>
+            </div>
+
+            <div class="result-item">
+                Создано дефектов: <b>{{ result.created_defects }}</b>
+            </div>
+
+            <div class="result-item">
+                Создано статусов СНП: <b>{{ result.created_statuses }}</b>
+            </div>
+
+            {% if result.errors %}
+                <div class="errors">
+                    <h3>Ошибки</h3>
+
+                    <ul>
+                        {% for error in result.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

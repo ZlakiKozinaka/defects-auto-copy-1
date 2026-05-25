@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Фото дефекта</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .photo-card {
+            background: #f8f6fb;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #d7cbe5;
+        }
+
+        .photo-card img {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .photo-info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .empty {
+            padding: 20px;
+            background: #fbe4e4;
+            color: #912d2d;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    ПРОСМОТР ФОТО ДЕФЕКТА
+</div>
+
+<div class="container">
+
+    <div class="block">
+        <h2>Информация по дефекту №{{ defect.id }}</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата внесения дефекта</th>
+                    <th>Станция</th>
+                    <th>VIN</th>
+                    <th>Модель</th>
+                    <th>Тип дефекта</th>
+                    <th>Область дефекта</th>
+                    <th>Грейд</th>
+                    <th>Ответственный</th>
+                    <th>Комментарий</th>
+                    <th>Устранена</th>
+                    <th>Кто устранил</th>
+                    <th>Дата устранения</th>
+                    <th>Проверена</th>
+                    <th>Кто разрешил</th>
+                    <th>Дата разрешения</th>
+                    <th>Дата отправки на СГП</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>{{ defect.data|date:"d.m.Y H:i:s" }}</td>
+                    <td>{{ defect.mesto|default:"" }}</td>
+                    <td>{{ defect.avto.vin }}</td>
+                    <td>{{ defect.avto.model }}</td>
+                    <td>{{ defect.tip }}</td>
+                    <td>{{ defect.oblast }}</td>
+                    <td>{{ defect.greyd }}</td>
+                    <td>{{ defect.otvetstvennyj|default:"" }}</td>
+                    <td>{{ defect.kommentarij|default:"" }}</td>
+                    <td>{% if defect.ustraneno %}Да{% else %}Нет{% endif %}</td>
+                    <td>{{ defect.kto_ustranil|default:"" }}</td>
+                    <td>{{ defect.data_ustraneniya|date:"d.m.Y H:i:s"|default:"" }}</td>
+                    <td>{% if defect.proveren %}Да{% else %}Нет{% endif %}</td>
+                    <td>{{ defect.kto_razreshil|default:"" }}</td>
+                    <td>{{ defect.data_razresheniya|date:"d.m.Y H:i:s"|default:"" }}</td>
+                    <td>{{ sgp_status.data_statusa|date:"d.m.Y H:i:s"|default:"" }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <a href="/exports/defects/" class="btn">Назад к выгрузке</a>
+    </div>
+
+    <div class="block">
+        <h2>Фото дефекта</h2>
+
+        {% if defect.photos.all %}
+            <div class="photo-gallery">
+                {% for photo in defect.photos.all %}
+                    <div class="photo-card">
+                        <a href="{{ photo.image.url }}" target="_blank">
+                            <img src="{{ photo.image.url }}" alt="Фото дефекта">
+                        </a>
+
+                        <div class="photo-info">
+                            Загружено: {{ photo.uploaded_at|date:"d.m.Y H:i:s" }}<br>
+                            Кто загрузил: {{ photo.uploaded_by|default:"" }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">
+                Фото к этому дефекту не загружены.
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+</body>
+</html>

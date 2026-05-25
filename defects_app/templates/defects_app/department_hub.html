@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Выбор раздела</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+            color: #1b1b1b;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 24px;
+            text-align: center;
+            font-size: 34px;
+            font-weight: bold;
+        }
+
+        .subheader {
+            margin-top: 8px;
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1100px;
+            margin: 24px auto 30px auto;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px;
+            border-left: 8px solid #b9a7cc;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .desc {
+            font-size: 15px;
+            line-height: 1.4;
+            color: #3b3b3b;
+            min-height: 48px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            background: #b9a7cc;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-top: 14px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .footer-actions {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .logout-link {
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .logout-link:hover {
+            text-decoration: underline;
+        }
+
+        .empty {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Выбор раздела
+        <div class="subheader">
+            Смена: {{ request.session.shift_name|default:"—" }}
+        </div>
+    </div>
+
+    <div class="container">
+        {% if departments %}
+            <div class="cards">
+                {% if "otk" in departments %}
+                    <div class="card">
+                        <div class="title">ОТК</div>
+                        <div class="desc">Контроль качества, дефекты, Оклайн, Доводка и станции качества.</div>
+                        <a class="btn" href="{% url 'department_section' 'otk' %}">Открыть ОТК</a>
+                    </div>
+                {% endif %}
+
+                {% if "aggregates" in departments %}
+                    <div class="card">
+                        <div class="title">Агрегаты</div>
+                        <div class="desc">Привязка телематики, ГЛОНАСС, батареи и двигателей.</div>
+                        <a class="btn" href="{% url 'department_section' 'aggregates' %}">Открыть Агрегаты</a>
+                    </div>
+                {% endif %}
+
+                {% if "logistics" in departments %}
+                    <div class="card">
+                        <div class="title">Логистика</div>
+                        <div class="desc">Создание машин, печать и очередь логистики по линии.</div>
+                        <a class="btn" href="{% url 'department_section' 'logistics' %}">Открыть Логистику</a>
+                    </div>
+                {% endif %}
+
+                {% if "planning" in departments %}
+                    <div class="card">
+                        <div class="title">Планирование</div>
+                        <div class="desc">Отчеты, выгрузки и загрузка плановых VIN.</div>
+                        <a class="btn" href="{% url 'department_section' 'planning' %}">Открыть Планирование</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="empty">
+                Для вашей учетной записи не назначено ни одной принадлежности.
+            </div>
+        {% endif %}
+
+        <div class="footer-actions">
+          <form method="post" action="/accounts/logout/" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="logout-link" style="background:none;border:none;cursor:pointer;padding:0;">
+                  Выйти из аккаунта
+              </button>
+          </form>
+        </div>
+    </div>
+</body>
+</html>

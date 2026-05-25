@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>{{ section_title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+            color: #1b1b1b;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 22px;
+            text-align: center;
+            font-size: 34px;
+            font-weight: bold;
+        }
+
+        .subheader {
+            margin-top: 8px;
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1100px;
+            margin: 24px auto;
+        }
+
+        .block {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+            padding: 18px;
+            margin-bottom: 18px;
+            border-left: 8px solid #b9a7cc;
+        }
+
+        .block-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            background: #b9a7cc;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 15px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .btn-secondary {
+            background: #e8e0f2;
+        }
+
+        .btn-secondary:hover {
+            background: #d9cde9;
+        }
+
+        .top-actions {
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #505050;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {{ section_title }}
+        <div class="subheader">
+            Смена: {{ request.session.shift_name|default:"—" }}
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="top-actions">
+            <a class="btn btn-secondary" href="{% url 'department_hub' %}">← К выбору раздела</a>
+            {% if is_global_manager %}
+                <a class="btn btn-secondary" href="/manager/">Панель начальника</a>
+            {% endif %}
+            <form method="post" action="/accounts/logout/" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Выйти</button>
+            </form>
+        </div>
+
+        {% if section == "aggregates" %}
+            <div class="block">
+                <div class="block-title">Рабочие вкладки агрегатов</div>
+                <div class="buttons">
+                    <a class="btn" href="{% url 'open_station_for_department' 5 %}">Агрегаты и батарея</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 3 %}">Глонасс и телематика</a>
+                </div>
+                <div class="hint">Изменение уже привязанных значений доступно только начальникам агрегатов.</div>
+            </div>
+        {% elif section == "otk" %}
+            <div class="block">
+                <div class="block-title">Рабочие вкладки ОТК</div>
+                <div class="buttons">
+                    <a class="btn" href="{% url 'open_station_for_department' 8 %}">T-03</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 10 %}">T-06</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 9 %}">T-20</a>
+                    <a class="btn" href="{% url 'open_vh1_station_for_department' %}">ВХ 1</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 1 %}">Бестеневая</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 11 %}">Доводка</a>
+                    <a class="btn" href="{% url 'open_station_for_department' 2 %}">Оклайн</a>
+                </div>
+                <div class="hint">Создание дефектов доступно работникам ОТК. Расширенные действия — начальникам ОТК.</div>
+            </div>
+        {% elif section == "logistics" %}
+            <div class="block">
+                <div class="block-title">Рабочие вкладки логистики</div>
+                <div class="buttons">
+                    <a class="btn" href="{% url 'open_station_for_department' 12 %}">Станция 1</a>
+                    <a class="btn" href="{% url 'logistics_live_cars' %}">Очередь логистики</a>
+                </div>
+                <div class="hint">В «Очереди логистики» двойной клик по карточке скрывает машину с экрана.</div>
+            </div>
+        {% elif section == "planning" %}
+            <div class="block">
+                <div class="block-title">Планирование производства</div>
+                <div class="buttons">
+                    <a class="btn" href="/reports/">Отчеты</a>
+                    <a class="btn" href="/exports/">Выгрузки</a>
+                    <a class="btn" href="/upload-plan-vin/">План VIN</a>
+                </div>
+                <div class="hint">Для отдела планирования доступ только к аналитике и плановым данным.</div>
+            </div>
+        {% else %}
+            <div class="block">
+                <div class="block-title">Неизвестный раздел</div>
+                <div class="hint">Обратитесь к администратору.</div>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Панель начальника</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .subheader {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .card p {
+            color: #555;
+            min-height: 48px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 10px 16px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .card-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        ПАНЕЛЬ НАЧАЛЬНИКА
+        <div class="subheader">
+            Пользователь: {{ request.user.username }} |
+            Смена: {{ shift_name }}
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <h3>Работа с дефектами</h3>
+                <p>Переход на станции, где можно искать, редактировать и удалять дефекты.</p>
+                <div class="card-links">
+                    <a href="{% url 'manager_open_station' 1 %}" class="btn">Бестеневая</a>
+                    <a href="{% url 'manager_open_station' 11 %}" class="btn">Доводка</a>
+                    <a href="/snp-orders/" class="btn">СНП – номера заказов</a>
+                    <a href="{% url 'manager_open_station' 2 %}" class="btn">OKLine</a>
+                    <a href="{% url 'manager_open_station' 8 %}" class="btn">Ст. 3 Качество</a>
+                    <a href="{% url 'manager_open_station' 9 %}" class="btn">Т20 Качество</a>
+                    <a href="{% url 'manager_open_station' 10 %}" class="btn">С06 Качество</a>
+                    <a href="{% url 'manager_open_station' 13 %}" class="btn">ВХ 1</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Привязки агрегатов</h3>
+                <p>Телематика, глонасс, батарея, передний и задний двигатель.</p>
+                <div class="card-links">
+                    <a href="{% url 'manager_open_station' 3 %}" class="btn">Телематика / Глонасс</a>
+                    <a href="{% url 'manager_open_station' 5 %}" class="btn">Агрегаты</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Создание машин</h3>
+                <p>Просмотр и создание новых машин на стартовой станции.</p>
+                <div class="card-links">
+                    <a href="/create-car/" class="btn">Станция 1</a>
+                    <a href="/upload-plan-vin/" class="btn">Загрузка плановых VIN</a>
+                    <a href="/live-cars/" class="btn">Машины в работе</a>
+                    <a href="/plans/" class="btn">Планы выпуска</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>История изменений</h3>
+                <p>В будущем сюда можно вывести историю изменений автомобилей и дефектов.</p>
+                <div class="card-links">
+                    <a href="#" class="btn">История авто</a>
+                    <a href="#" class="btn">История дефектов</a>
+                    <a href="/upload-old-snp-cars/" class="btn" style="margin-left: 15px;">Загрузка старых СНП</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Отчеты</h3>
+                <p>Здесь позже можно разместить формирование отчетов по сменам, станциям и сотрудникам.</p>
+                <div class="card-links">
+                    <a href="/reports/" class="btn">Открыть</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Выгрузки</h3>
+                <p>Экспорт данных по автомобилям, дефектам, привязкам и истории изменений.</p>
+                <div class="card-links">
+                    <a href="/exports/" class="btn">Открыть</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

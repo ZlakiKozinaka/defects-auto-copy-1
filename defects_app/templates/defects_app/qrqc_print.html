@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Печать QRQC отчёта</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 6mm;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: white;
+            color: #000;
+        }
+
+        .no-print {
+            text-align: center;
+            margin: 12px 0;
+        }
+
+        .btn {
+            background: #b9a7cc;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .page {
+            width: 407mm;
+            min-height: 285mm;
+            padding: 5mm;
+            box-sizing: border-box;
+        }
+
+        .report-title {
+            text-align: center;
+            font-size: 34px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .report-period {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .card {
+            border: 1px solid #777;
+            border-radius: 10px;
+            padding: 10px;
+            height: 82mm;
+            box-sizing: border-box;
+            overflow: hidden;
+            break-inside: avoid;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .card-subtitle {
+            font-size: 11px;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .kpi {
+            background: #f3f0f7;
+            border-radius: 6px;
+            padding: 5px;
+            font-size: 10px;
+        }
+
+        .kpi strong {
+            display: block;
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .chart-box {
+            height: 52mm;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .mini-title {
+            text-align: center;
+            font-weight: bold;
+            background: #e9e1f1;
+            padding: 5px;
+            border: 1px solid #d1c5dd;
+            border-bottom: none;
+            border-radius: 7px 7px 0 0;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            table-layout: fixed;
+        }
+
+        th {
+            background: #f1ebf7;
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            vertical-align: top;
+        }
+
+        .top-table th:nth-child(1),
+        .top-table td:nth-child(1) {
+            width: 34%;
+        }
+
+        .top-table th:nth-child(2),
+        .top-table td:nth-child(2) {
+            width: 50%;
+        }
+
+        .top-table th:nth-child(3),
+        .top-table td:nth-child(3) {
+            width: 16%;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .snp-table th:nth-child(1),
+        .snp-table td:nth-child(1) {
+            width: 115px;
+        }
+
+        .snp-table th:nth-child(2),
+        .snp-table td:nth-child(2) {
+            width: 95px;
+        }
+
+        .snp-table th:nth-child(3),
+        .snp-table td:nth-child(3) {
+            width: 38px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .snp-table th:nth-child(4),
+        .snp-table td:nth-child(4) {
+            width: auto;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 12px;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="no-print">
+    <button class="btn" onclick="window.print()">Печать</button>
+    <button class="btn" onclick="window.location.href='/reports/qrqc/?month={{ selected_month }}'">Назад</button>
+</div>
+
+<div class="page">
+
+    <div class="report-title">QRQC ОТЧЁТ</div>
+    <div class="report-period">Период: {{ selected_month }}</div>
+
+    <div class="grid">
+
+        <div class="card">
+            <div class="card-title">OEE</div>
+            <div class="card-subtitle">Эффективность работы линии по дням месяца</div>
+
+            <div class="kpi-row">
+                <div class="kpi">OEE<strong id="oeeValue">—</strong></div>
+                <div class="kpi">План<strong id="planValue">—</strong></div>
+                <div class="kpi">Факт<strong id="factValue">—</strong></div>
+                <div class="kpi">Простой<strong id="downtimeValue">—</strong></div>
+            </div>
+
+            <div class="chart-box">
+                <canvas id="oeeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">DPHU</div>
+            <div class="card-subtitle">Дефекты по ответственным за день и за месяц</div>
+
+            <div class="two-col">
+                <div>
+                    <div style="font-weight:bold; margin-bottom:3px;">За день</div>
+                    <div class="chart-box">
+                        <canvas id="dphuDayChart"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-weight:bold; margin-bottom:3px;">За месяц</div>
+                    <div class="chart-box">
+                        <canvas id="dphuMonthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Топ дефектов за месяц</div>
+            <div class="card-subtitle">10 самых частых дефектов V1 и V2 за выбранный месяц</div>
+
+            <div class="two-col">
+                <div>
+                    <div class="mini-title">V1</div>
+                    <table class="top-table">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Область</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topMonthV1Table"></tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <div class="mini-title">V2</div>
+                    <table class="top-table">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Область</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topMonthV2Table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Топ дефектов за смену</div>
+            <div class="card-subtitle">10 самых частых дефектов V1 и V2 за выбранный день</div>
+
+            <div class="two-col">
+                <div>
+                    <div class="mini-title">V1</div>
+                    <table class="top-table">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Область</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topDayV1Table"></tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <div class="mini-title">V2</div>
+                    <table class="top-table">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Область</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topDayV2Table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">СНП по моделям</div>
+            <div class="card-subtitle">Количество машин на СНП по каждой модели</div>
+
+            <div class="chart-box">
+                <canvas id="snpModelsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Старшие машины на СНП</div>
+            <div class="card-subtitle">10 машин, которые дольше всего находятся на СНП</div>
+
+            <table class="snp-table">
+                <thead>
+                    <tr>
+                        <th>VIN</th>
+                        <th>Модель</th>
+                        <th>Дней</th>
+                        <th>Причина</th>
+                    </tr>
+                </thead>
+                <tbody id="oldestSnpCarsTable"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const selectedMonth = "{{ selected_month }}";
+    const selectedDay = "{{ selected_day }}";
+
+    function formatPercent(value) {
+        return `${Number(value || 0).toFixed(2)}%`;
+    }
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    function getSelectedDayForApi(month) {
+        const dayInput = document.getElementById("dayInput");
+
+        if (dayInput && dayInput.value) {
+            return dayInput.value;
+        }
+
+        return selectedDay;
+    }
+
+    async function loadOee() {
+        const response = await fetch(`/reports/oee/api/?month=${selectedMonth}`);
+        const data = await response.json();
+
+        setText("oeeValue", formatPercent(data.summary.month_oee));
+        setText("planValue", data.summary.total_plan);
+        setText("factValue", data.summary.total_fact);
+        setText("downtimeValue", data.summary.total_downtime);
+
+        new Chart(document.getElementById("oeeChart"), {
+            type: "bar",
+            data: {
+                labels: data.days.map(item => item.day || item.date.slice(0, 2)),
+                datasets: [{
+                    label: "OEE, %",
+                    data: data.days.map(item => item.oee || 0),
+                    backgroundColor: "#5b87c2"
+                }]
+            },
+            options: {
+                devicePixelRatio: 4,
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 120,
+                        ticks: {
+                            callback: value => value + "%",
+                            font: { size: 10 }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            minRotation: 0,
+                            font: { size: 9 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async function loadTopDefects() {
+        const day = getSelectedDayForApi(selectedMonth);
+
+        const response = await fetch(`/reports/top-defects/api/?month=${selectedMonth}&day=${day}`);
+        const data = await response.json();
+
+        buildTopTable("topDayV1Table", data.day_report.v1);
+        buildTopTable("topDayV2Table", data.day_report.v2);
+        buildTopTable("topMonthV1Table", data.month_report.v1);
+        buildTopTable("topMonthV2Table", data.month_report.v2);
+    }
+
+    function buildTopTable(id, items) {
+        const tbody = document.getElementById(id);
+        tbody.innerHTML = "";
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="empty">Нет данных</td></tr>`;
+            return;
+        }
+
+        items.forEach(item => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.tip__nazvanie || ""}</td>
+                    <td>${item.oblast__nazvanie || ""}</td>
+                    <td>${item.count || 0}</td>
+                </tr>
+            `;
+        });
+    }
+
+    async function loadDphu() {
+        const day = getSelectedDayForApi(selectedMonth);
+
+        const response = await fetch(`/reports/qrqc/dphu-api/?month=${selectedMonth}&day=${day}`);
+        const data = await response.json();
+
+        const labels = data.responsibles || [];
+
+        new Chart(document.getElementById("dphuDayChart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Дефекты",
+                    data: labels.map(name => data.day_report.counts[name] || 0),
+                    backgroundColor: "#b9a7cc"
+                }]
+            },
+            options: {
+                devicePixelRatio: 4,
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+                    x: { ticks: { maxRotation: 50, minRotation: 50, font: { size: 8 } } }
+                }
+            }
+        });
+
+        const monthLabels = data.month_report.map(item => item.day);
+
+        const datasets = labels.map(name => ({
+            label: name,
+            data: data.month_report.map(item => item.counts[name] || 0),
+            stack: "defects"
+        }));
+
+        new Chart(document.getElementById("dphuMonthChart"), {
+            type: "bar",
+            data: {
+                labels: monthLabels,
+                datasets: datasets
+            },
+            options: {
+                devicePixelRatio: 4,
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { stacked: true, ticks: { font: { size: 8 } } },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                }
+            }
+        });
+    }
+
+    async function loadSnpBlocks() {
+        const response = await fetch("/reports/qrqc/snp-api/");
+        const data = await response.json();
+
+        renderSnpModelsChart(data.models_chart);
+        renderOldestSnpCars(data.oldest_cars);
+    }
+
+    function renderSnpModelsChart(items) {
+        const labels = items.map(item => item.model);
+        const values = items.map(item => item.count);
+
+        new Chart(document.getElementById("snpModelsChart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Машин на СНП",
+                    data: values,
+                    backgroundColor: "#b9a7cc"
+                }]
+            },
+            options: {
+                devicePixelRatio: 4,
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, font: { size: 10 } }
+                    },
+                    x: {
+                        ticks: { maxRotation: 35, minRotation: 35, font: { size: 8 } }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderOldestSnpCars(items) {
+        const tbody = document.getElementById("oldestSnpCarsTable");
+        tbody.innerHTML = "";
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">Нет машин на СНП</td>
+                </tr>
+            `;
+            return;
+        }
+
+        items.forEach(item => {
+            const comments = item.comments && item.comments.length > 0
+                ? item.comments.join("; ")
+                : "Причина не указана";
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.vin || ""}</td>
+                    <td>${item.model || ""}</td>
+                    <td>${item.days_on_snp}</td>
+                    <td>${comments}</td>
+                </tr>
+            `;
+        });
+    }
+
+    Promise.all([
+        loadOee(),
+        loadDphu(),
+        loadTopDefects(),
+        loadSnpBlocks()
+    ]).then(() => {
+        setTimeout(() => {
+            window.print();
+        }, 1600);
+    });
+</script>
+
+</body>
+</html>

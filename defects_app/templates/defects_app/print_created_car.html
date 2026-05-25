@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Печать карточки автомобиля</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page {
+            width: 100%;
+            height: 270mm;
+            box-sizing: border-box;
+            padding: 0;
+            page-break-after: always;
+            overflow: hidden;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .vin-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 4px;
+            font-size: 16px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .station-col {
+            width: 4cm;
+        }
+
+        .defect-col {
+            width: 8.4cm;
+        }
+
+        .resp-col {
+            width: 3.2cm;
+        }
+
+        .check-col {
+            width: 1.4cm;
+            font-size: 12px;
+            word-break: break-word;
+        }
+
+        .empty-row td {
+            height: 18mm;
+        }
+
+        .aggregate-col {
+            width: 35%;
+        }
+
+        .barcode-col {
+            width: 65%;
+        }
+
+        .barcode-cell {
+            height: 65px;
+        }
+
+        .no-print {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #b9a7cc;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">Печать</button>
+        {% if important_print_url %}<button class="btn" id="open-info-print">Печать листа на 6 машин</button>{% endif %}
+        <a href="/create-car/?car_id={{ car.id }}" class="btn">Вернуться</a>
+        <div id="info-print-status" style="margin-top:10px;font-size:14px;font-weight:bold;"></div>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">VIN: {{ car.vin }}</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="station-col">№ станции, название</th>
+                    <th class="defect-col">Дефект / проблема</th>
+                    <th class="resp-col">Ответственный</th>
+                    <th class="check-col">Внесена в базу</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for station in stations %}
+                <tr class="empty-row">
+                    <td>{{ station }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+                {% for i in "1234567890" %}
+                <tr class="empty-row">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">VIN: {{ car.vin }}</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="aggregate-col">Агрегат</th>
+                    <th class="barcode-col">Штрих код</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aggregate in aggregates %}
+                <tr>
+                    <td>{{ aggregate }}</td>
+                    <td class="barcode-cell"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">Информация по автомобилю</div>
+
+        {% if plan_vin %}
+            <table>
+                <tbody>
+                    <tr>
+                        <th>VIN номер</th>
+                        <td>{{ plan_vin.vin }}</td>
+                    </tr>
+                    <tr>
+                        <th>Модель</th>
+                        <td>{{ plan_vin.model }}</td>
+                    </tr>
+                    <tr>
+                        <th>Цвет кузова</th>
+                        <td>{{ plan_vin.cvet_kuzova }}</td>
+                    </tr>
+                    <tr>
+                        <th>Цвет салона</th>
+                        <td>{{ plan_vin.cvet_salona }}</td>
+                    </tr>
+                    <tr>
+                        <th>Количество мест</th>
+                        <td>{{ kolichestvo_mest }}</td>
+                    </tr>
+                    <tr>
+                        <th>Комплектация</th>
+                        <td>{{ plan_vin.komplektaciya }}</td>
+                    </tr>
+                    <tr>
+                        <th>ОТТС</th>
+                        <td>{{ plan_vin.otts }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 35px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">
+                    Штрихкод VIN
+                </div>
+                {{ vin_barcode_svg|safe }}
+            </div>
+        {% else %}
+            <p>Плановая информация по VIN не найдена.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        const infoPrintUrl = "{% if important_print_url %}{{ important_print_url }}{% endif %}";
+        let infoWindowOpened = false;
+
+        function openInfoPrintWindow() {
+            const infoPrintStatus = document.getElementById("info-print-status");
+            if (!infoPrintUrl) {
+                infoPrintStatus.textContent = "Лист на 6 машин будет открыт автоматически после создания 6-й машины.";
+                infoPrintStatus.style.color = "#9a6700";
+                return;
+            }
+            const infoWindow = window.open(infoPrintUrl, "_blank");
+
+            if (infoWindow) {
+                infoWindowOpened = true;
+                infoPrintStatus.textContent = "Лист на 6 машин открыт в отдельном окне. Проверьте отправку на удаленный принтер.";
+                infoPrintStatus.style.color = "#1a7f37";
+            } else {
+                infoPrintStatus.textContent = "Не удалось открыть окно листа на 6 машин. Разрешите всплывающие окна и повторите печать.";
+                infoPrintStatus.style.color = "#b42318";
+            }
+        }
+
+        window.onload = function () {
+            setTimeout(function () {
+                window.print();
+            }, 300);
+
+            setTimeout(function () {
+                if (!infoWindowOpened) {
+                    openInfoPrintWindow();
+                }
+            }, 450);
+        };
+
+        const openInfoPrintBtn = document.getElementById("open-info-print");
+        if (openInfoPrintBtn) {
+            openInfoPrintBtn.addEventListener("click", openInfoPrintWindow);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Логистика — машины на линии</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            border-left: 10px solid #4b8a4a;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .card.hidden-by-logistics {
+            display: none;
+        }
+
+        .vin {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 14px;
+        }
+
+        .info {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .timer {
+            margin-top: 18px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #912d2d;
+            text-align: right;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .top-links {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 6px;
+        }
+
+        .hint {
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ЛОГИСТИКА — МАШИНЫ НА ЛИНИИ
+
+        <div class="top-links">
+            <a href="/live-cars/" class="btn">Обычные «Машины на линии»</a>
+            <button class="btn" id="reset-hidden-cars">Показать скрытые</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="hint">Двойной клик по карточке скрывает машину с экрана для логистики.</div>
+
+        {% if cars %}
+            <div class="cards" id="cards-container">
+                {% for item in cars %}
+                    <div class="card" data-vin="{{ item.car.vin }}">
+                        <div class="vin">{{ item.car.vin }}</div>
+
+                        <div class="info">
+                            <strong>Цвет кузова:</strong>
+                            {% if item.plan %}{{ item.plan.cvet_kuzova }}{% else %}—{% endif %}
+                        </div>
+
+                        <div class="info">
+                            <strong>Цвет салона:</strong>
+                            {% if item.plan %}{{ item.plan.cvet_salona }}{% else %}—{% endif %}
+                        </div>
+
+                        <div class="info">
+                            <strong>Количество мест:</strong> {{ item.kolichestvo_mest }}
+                        </div>
+
+                        <div class="timer" data-created="{{ item.car.data_sozdaniya|date:'c' }}">
+                            00:00:00
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">
+                Сейчас нет машин в работе.
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const HIDDEN_CARS_STORAGE_KEY = "logistics_hidden_cars_v1";
+
+        function getHiddenCars() {
+            try {
+                const raw = localStorage.getItem(HIDDEN_CARS_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveHiddenCars(vins) {
+            localStorage.setItem(HIDDEN_CARS_STORAGE_KEY, JSON.stringify(vins));
+        }
+
+        function hideCardByVin(vin) {
+            const card = document.querySelector(`.card[data-vin="${vin}"]`);
+            if (card) {
+                card.classList.add("hidden-by-logistics");
+            }
+        }
+
+        function applyHiddenCars() {
+            const hiddenVins = getHiddenCars();
+            hiddenVins.forEach(hideCardByVin);
+        }
+
+        function updateTimers() {
+            const timers = document.querySelectorAll(".timer");
+
+            timers.forEach(function(timer) {
+                const createdAt = new Date(timer.dataset.created);
+                const now = new Date();
+
+                let diff = Math.floor((now - createdAt) / 1000);
+
+                if (diff < 0) {
+                    diff = 0;
+                }
+
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+
+                timer.textContent =
+                    String(hours).padStart(2, "0") + ":" +
+                    String(minutes).padStart(2, "0") + ":" +
+                    String(seconds).padStart(2, "0");
+            });
+        }
+
+        document.querySelectorAll(".card").forEach(function(card) {
+            card.addEventListener("dblclick", function() {
+                const vin = card.dataset.vin;
+                const hiddenVins = getHiddenCars();
+
+                if (!hiddenVins.includes(vin)) {
+                    hiddenVins.push(vin);
+                    saveHiddenCars(hiddenVins);
+                }
+
+                card.classList.add("hidden-by-logistics");
+            });
+        });
+
+        const resetButton = document.getElementById("reset-hidden-cars");
+        if (resetButton) {
+            resetButton.addEventListener("click", function() {
+                localStorage.removeItem(HIDDEN_CARS_STORAGE_KEY);
+                document.querySelectorAll(".card.hidden-by-logistics").forEach(function(card) {
+                    card.classList.remove("hidden-by-logistics");
+                });
+            });
+        }
+
+        applyHiddenCars();
+        updateTimers();
+        setInterval(updateTimers, 1000);
+
+        setInterval(function() {
+            window.location.reload();
+        }, 15000);
+    </script>
+</body>
+</html>

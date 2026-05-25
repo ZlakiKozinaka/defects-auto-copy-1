@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>QRQC отчёт</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+            color: #000;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 24px;
+            text-align: center;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .subheader {
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        .container {
+            width: 96%;
+            margin: 20px auto;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #bbb;
+            border-radius: 8px;
+        }
+
+        .btn {
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 11px 18px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .top-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 220px 1.45fr;
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .bottom-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .third-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1.5fr;
+            gap: 18px;
+        }
+        .fourth-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+        }
+
+        .bottom-dashboard-grid .report-card {
+            width: auto;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+            min-height: 330px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            color: black;
+            display: block;
+        }
+
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 16px rgba(0,0,0,0.16);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 12px;
+        }
+
+        .mini-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .mini-kpi {
+            background: #f3f0f7;
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .mini-kpi-label {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .mini-kpi-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .chart-box {
+            height: 210px;
+        }
+
+        .snp-chart-box {
+            height: 400px;
+        }
+
+        .no-plan-warning {
+            display: none;
+            background: #fbe4e4;
+            color: #912d2d;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+        }
+
+        .card-header span {
+            font-size: 14px;
+            color: #6f5a8f;
+            font-weight: bold;
+        }
+
+        .dphu-mini-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .dphu-mini-grid h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+
+        .dphu-mini-grid canvas {
+            width: 100% !important;
+            height: 180px !important;
+        }
+
+        .top-defects-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .top-defects-block {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #d2c5df;
+        }
+
+        .top-defects-block h3 {
+            margin: 0;
+            padding: 8px 10px;
+            text-align: center;
+            background: #b9a7cc;
+            font-size: 18px;
+        }
+
+        .top-defects-block.v1 h3 {
+            background: #d7c6e6;
+        }
+
+        .top-defects-block.v2 h3 {
+            background: #c7d7ee;
+        }
+
+        .top-defects-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .top-defects-table th {
+            background: #f1ebf7;
+            border-bottom: 1px solid #ddd;
+            padding: 6px 7px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .top-defects-table td {
+            border-bottom: 1px solid #e2dce8;
+            padding: 6px 7px;
+            font-size: 12px;
+        }
+
+        .top-defects-table th:last-child,
+        .top-defects-table td:last-child {
+            text-align: right;
+            font-weight: bold;
+            width: 50px;
+        }
+
+        .empty-top-defect {
+            color: #777;
+            text-align: center;
+            padding: 18px;
+        }
+
+        .snp-oldest-table {
+            table-layout: fixed;
+        }
+
+        .snp-oldest-table th:nth-child(1),
+        .snp-oldest-table td:nth-child(1) {
+            width: 180px;
+        }
+
+        .snp-oldest-table th:nth-child(2),
+        .snp-oldest-table td:nth-child(2) {
+            width: 180px;
+        }
+
+        .snp-oldest-table th:nth-child(3),
+        .snp-oldest-table td:nth-child(3) {
+            width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .snp-oldest-table th:nth-child(4),
+        .snp-oldest-table td:nth-child(4) {
+            width: auto;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .direct-pass-card {
+            min-height: 260px;
+            padding: 16px;
+        }
+
+        .direct-pass-kpi-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .direct-pass-kpi-row .mini-kpi {
+            width: auto;
+            padding: 7px;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                margin: 0;
+            }
+
+            .report-card {
+                box-shadow: none;
+                border: 1px solid #999;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        QRQC ОТЧЁТ
+        <div class="subheader">
+            Пользователь: {{ request.user.username }} |
+            <a href="/reports/" style="color:black; text-decoration:none;">Все отчёты</a> |
+            <a href="/manager/" style="color:black; text-decoration:none;">Панель начальника</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="toolbar no-print">
+            <form method="get" style="display:flex; gap:14px; align-items:end;">
+                <div class="field">
+                    <label for="monthInput">Выберите месяц</label>
+                    <input type="month"
+                        id="monthInput"
+                        name="month"
+                        class="form-control"
+                        value="{{ selected_month }}">
+                </div>
+
+                <div class="field">
+                    <label for="dayInput">Выберите день</label>
+                    <input type="date"
+                        id="dayInput"
+                        name="day"
+                        class="form-control"
+                        value="{{ selected_day }}">
+                </div>
+
+                <button type="submit" class="btn">Обновить</button>
+            </form>
+            <a href="/reports/qrqc/export-production/?month={{ selected_month }}" class="btn">Выгрузить</a>
+            <a href="/reports/qrqc/print/?month={{ selected_month }}&day={{ selected_day }}" class="btn">Печать A3</a>
+        </div>
+
+        <div class="top-dashboard-grid">
+
+            <a class="report-card" id="oeeCard" href="/reports/oee/?month={{ selected_month }}">
+                <div class="card-title">OEE</div>
+                <div class="card-subtitle">Эффективность работы линии по дням месяца</div>
+
+                <div id="oeeNoPlanWarning" class="no-plan-warning">
+                    За выбранный месяц не задан план выпуска.
+                </div>
+
+                <div class="mini-kpi-row">
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">OEE</div>
+                        <div class="mini-kpi-value" id="miniOee">—</div>
+                    </div>
+
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">План</div>
+                        <div class="mini-kpi-value" id="miniPlan">—</div>
+                    </div>
+
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">Факт</div>
+                        <div class="mini-kpi-value" id="miniFact">—</div>
+                    </div>
+
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">Простой</div>
+                        <div class="mini-kpi-value" id="miniDowntime">—</div>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="oeeMiniChart"></canvas>
+                </div>
+            </a>
+
+            <a class="report-card direct-pass-card" href="#">
+                <div class="card-title">ППС</div>
+                <div class="card-subtitle">Процент прямого схода за выбранный день</div>
+
+                <div class="direct-pass-kpi-row">
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">ППС</div>
+                        <div class="mini-kpi-value" id="directPassPercent">—</div>
+                    </div>
+
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">Бестеневая</div>
+                        <div class="mini-kpi-value" id="directPassTotal">—</div>
+                    </div>
+
+                    <div class="mini-kpi">
+                        <div class="mini-kpi-label">Прямо на СГП</div>
+                        <div class="mini-kpi-value" id="directPassCount">—</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'dphu_report' %}?month={{ selected_month }}" class="report-card">
+                <div class="card-header">
+                    <h2>DPHU</h2>
+                    <span>Подробнее →</span>
+                </div>
+
+                <div class="dphu-mini-grid">
+                    <div>
+                        <h3>За день</h3>
+                        <canvas id="dphuDayChart"></canvas>
+                    </div>
+
+                    <div>
+                        <h3>За месяц</h3>
+                        <canvas id="dphuMonthChart"></canvas>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="bottom-dashboard-grid" style="margin-top: 18px;">
+
+            <a href="{% url 'top_defects_report' %}?month={{ selected_month }}" class="report-card">
+                <div class="card-title">Топ дефектов за месяц</div>
+                <div class="card-subtitle">10 самых частых дефектов V1 и V2 за выбранный месяц</div>
+
+                <div class="top-defects-wrapper">
+                    <div class="top-defects-block v1">
+                        <h3>V1</h3>
+                        <table class="top-defects-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Кол-во</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topMonthV1Table"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="top-defects-block v2">
+                        <h3>V2</h3>
+                        <table class="top-defects-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Кол-во</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topMonthV2Table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'top_defects_report' %}?month={{ selected_month }}" class="report-card">
+                <div class="card-title">Топ дефектов за смену</div>
+                <div class="card-subtitle">10 самых частых дефектов V1 и V2 за выбранный день</div>
+
+                <div class="top-defects-wrapper">
+                    <div class="top-defects-block v1">
+                        <h3>V1</h3>
+                        <table class="top-defects-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Кол-во</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topDayV1Table"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="top-defects-block v2">
+                        <h3>V2</h3>
+                        <table class="top-defects-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Кол-во</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topDayV2Table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="third-dashboard-grid" style="margin-top: 18px;">
+
+            <a class="report-card" href="#">
+                <div class="card-title">СНП по моделям</div>
+                <div class="card-subtitle">Количество машин на СНП по каждой модели</div>
+
+                <div class="chart-box snp-chart-box">
+                    <canvas id="snpModelsChart"></canvas>
+                </div>
+            </a>
+
+            <a class="report-card" href="#">
+                <div class="card-title">СНП за день (последние 10)</div>
+                <div class="card-subtitle">10 последних машин, ушедших на СНП за выбранный день</div>
+
+                <table class="top-defects-table snp-oldest-table">
+                    <thead>
+                        <tr>
+                            <th>VIN</th>
+                            <th>Модель</th>
+                            <th>Время СНП</th>
+                            <th>Причина</th>
+                    </thead>
+                    <tbody id="latestDaySnpCarsTable"></tbody>
+                </table>
+            </a>
+
+            <a class="report-card" href="#">
+                <div class="card-title">Старшие машины на СНП</div>
+                <div class="card-subtitle">10 машин, которые дольше всего находятся на СНП</div>
+
+                <table class="top-defects-table snp-oldest-table">
+                    <thead>
+                        <tr>
+                            <th>VIN</th>
+                            <th>Модель</th>
+                            <th>Дней</th>
+                            <th>Причина</th>
+                        </tr>
+                    </thead>
+                    <tbody id="oldestSnpCarsTable"></tbody>
+                </table>
+            </a>
+
+        </div>
+
+        <div class="fourth-dashboard-grid" style="margin-top: 18px;">
+            <a class="report-card" href="#">
+                <div class="card-title">СНП по дням (месяц)</div>
+                <div class="card-subtitle">Сколько машин находится на СНП по дням месяца</div>
+                <div class="chart-box">
+                    <canvas id="snpInMonthChart"></canvas>
+                </div>
+            </a>
+
+            <a class="report-card" href="#">
+                <div class="card-title">Уход на СНП по дням</div>
+                <div class="card-subtitle">Количество машин, ушедших на СНП за сутки</div>
+                <div class="chart-box">
+                    <canvas id="avgSnpPerDayChart"></canvas>
+                </div>
+            </a>
+
+            <a class="report-card" href="#">
+                <div class="card-title">Среднее по СНП (месяцы)</div>
+                <div class="card-subtitle">Среднее число ушедших на СНП по месяцам года</div>
+                <div class="chart-box">
+                    <canvas id="avgSnpPerMonthChart"></canvas>
+                </div>
+            </a>
+        </div>
+    
+    </div>
+
+    <script>
+        const selectedMonth = "{{ selected_month }}";
+        const selectedDay = "{{ selected_day }}";
+        const dphuApiUrl = "{% url 'qrqc_dphu_api' %}";
+        let oeeMiniChart = null;
+
+        function formatPercent(value) {
+            return `${Number(value || 0).toFixed(2)}%`;
+        }
+
+        function setText(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function getSelectedMonth() {
+            const monthInput = document.getElementById("monthInput");
+            return monthInput ? monthInput.value : selectedMonth;
+        }
+
+        function getSelectedDayForApi(month) {
+            const dayInput = document.getElementById("dayInput");
+
+            if (dayInput && dayInput.value) {
+                return dayInput.value;
+            }
+
+            return selectedDay;
+        }
+
+        function loadOeeMiniChart() {
+            const month = getSelectedMonth();
+
+            fetch(`/reports/oee/api/?month=${month}`)
+                .then(response => response.json())
+                .then(data => {
+                    const summary = data.summary;
+                    const days = data.days;
+
+                    setText("miniOee", formatPercent(summary.month_oee));
+                    setText("miniPlan", summary.total_plan);
+                    setText("miniFact", summary.total_fact);
+                    setText("miniDowntime", summary.total_downtime);
+
+                    const hasPlanDays = days.filter(item => item.has_plan);
+                    const warning = document.getElementById("oeeNoPlanWarning");
+
+                    if (warning) {
+                        warning.style.display = hasPlanDays.length === 0 ? "block" : "none";
+                    }
+
+                    renderOeeChart(days);
+                });
+        }
+
+        function renderOeeChart(days) {
+            const ctx = document.getElementById("oeeMiniChart");
+
+            if (oeeMiniChart) {
+                oeeMiniChart.destroy();
+            }
+
+            oeeMiniChart = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: days.map(item => item.day || item.date.slice(0, 2)),
+                    datasets: [{
+                        label: "OEE, %",
+                        data: days.map(item => item.oee || 0),
+                        backgroundColor: "#5b87c2",
+                        borderColor: "#4c77ad",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    devicePixelRatio: 3,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + "%";
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                minRotation: 0,
+                                autoSkip: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadDphuMiniCharts() {
+            const month = getSelectedMonth();
+            const day = getSelectedDayForApi(month);
+
+            const response = await fetch(`${dphuApiUrl}?month=${month}&day=${day}`);
+            const data = await response.json();
+
+            renderDphuDayChart(data);
+            renderDphuMonthChart(data);
+        }
+
+        function renderDphuDayChart(data) {
+            const ctx = document.getElementById("dphuDayChart");
+            if (!ctx) return;
+
+            const labels = data.responsibles || [];
+            const values = labels.map(name => data.day_report.counts?.[name] || 0);
+
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Дефекты",
+                        data: values,
+                        backgroundColor: "#b9a7cc"
+                    }]
+                },
+                options: {
+                    devicePixelRatio: 3,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 90,
+                                minRotation: 90
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDphuMonthChart(data) {
+            const ctx = document.getElementById("dphuMonthChart");
+            if (!ctx) return;
+
+            const labels = data.month_report.map(item => item.day);
+            const responsibles = data.responsibles || [];
+
+            const datasets = responsibles.map(name => ({
+                label: name,
+                data: data.month_report.map(item => item.counts?.[name] || 0),
+                stack: "defects"
+            }));
+
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    devicePixelRatio: 3,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadTopDefects() {
+            const month = getSelectedMonth();
+            const day = getSelectedDayForApi(month);
+
+            const response = await fetch(`/reports/top-defects/api/?month=${month}&day=${day}`);
+            const data = await response.json();
+
+            renderTopDefects("topDayV1Table", data.day_report.v1);
+            renderTopDefects("topDayV2Table", data.day_report.v2);
+
+            renderTopDefects("topMonthV1Table", data.month_report.v1);
+            renderTopDefects("topMonthV2Table", data.month_report.v2);
+        }
+
+        function renderTopDefects(elementId, items) {
+            const tbody = document.getElementById(elementId);
+            if (!tbody) return;
+
+            tbody.innerHTML = "";
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="empty-top-defect">Нет данных</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${item.tip__nazvanie || ""}</td>
+                    <td>${item.oblast__nazvanie || ""}</td>
+                    <td>${item.count || 0}</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        loadOeeMiniChart();
+        loadDphuMiniCharts();
+        loadTopDefects();
+    </script>
+
+    <script>
+        let snpModelsChart = null;
+        let snpInMonthChart = null;
+        let avgSnpPerDayChart = null;
+        let avgSnpPerMonthChart = null;
+
+        async function loadSnpBlocks() {
+            const month = getSelectedMonth();
+            const day = getSelectedDayForApi(month);
+
+            const response = await fetch(`/reports/qrqc/snp-api/?day=${day}&month=${month}`);
+            const data = await response.json();
+
+            renderSnpModelsChart(data.models_chart);
+            renderLatestDaySnpCars(data.latest_day_snp_cars);
+            renderOldestSnpCars(data.oldest_cars);
+            renderSnpInMonthChart(data.snp_in_month_chart || []);
+            renderAvgSnpPerDayChart(data.avg_snp_per_day_chart || []);
+            renderAvgSnpPerMonthChart(data.avg_snp_per_month_chart || []);
+        }
+
+        function buildPastelBarChart(ctx, labels, values, label, rotateLabels = false) {
+            return new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        backgroundColor: "#d7c6e6",
+                        borderColor: "#b9a7cc",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    devicePixelRatio: 3,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: rotateLabels ? 90 : 0,
+                                minRotation: rotateLabels ? 90 : 0,
+                                autoSkip: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSnpInMonthChart(items) {
+            const ctx = document.getElementById("snpInMonthChart");
+            if (!ctx) return;
+            if (snpInMonthChart) snpInMonthChart.destroy();
+
+            snpInMonthChart = buildPastelBarChart(
+                ctx,
+                items.map(item => item.day),
+                items.map(item => item.count),
+                "На СНП, шт",
+                false
+            );
+        }
+
+        function renderAvgSnpPerDayChart(items) {
+            const ctx = document.getElementById("avgSnpPerDayChart");
+            if (!ctx) return;
+            if (avgSnpPerDayChart) avgSnpPerDayChart.destroy();
+
+            avgSnpPerDayChart = buildPastelBarChart(
+                ctx,
+                items.map(item => item.day),
+                items.map(item => item.count),
+                "Ушло на СНП, шт/сутки",
+                false
+            );
+        }
+
+        function renderAvgSnpPerMonthChart(items) {
+            const ctx = document.getElementById("avgSnpPerMonthChart");
+            if (!ctx) return;
+            if (avgSnpPerMonthChart) avgSnpPerMonthChart.destroy();
+
+            avgSnpPerMonthChart = buildPastelBarChart(
+                ctx,
+                items.map(item => item.month),
+                items.map(item => item.avg_count),
+                "Среднее, шт/сутки",
+                true
+            );
+        }
+
+        function renderSnpModelsChart(items) {
+            const ctx = document.getElementById("snpModelsChart");
+            if (!ctx) return;
+
+            const labels = items.map(item => item.model);
+            const values = items.map(item => item.count);
+
+            if (snpModelsChart) {
+                snpModelsChart.destroy();
+            }
+
+            snpModelsChart = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Машин на СНП",
+                        data: values,
+                        backgroundColor: "#b9a7cc"
+                    }]
+                },
+                options: {
+                    devicePixelRatio: 3,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 90,
+                                minRotation: 90,
+                                autoSkip: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadDirectPass() {
+            const month = getSelectedMonth();
+            const day = getSelectedDayForApi(month);
+
+            const response = await fetch(`/reports/qrqc/direct-pass-api/?day=${day}`);
+            const data = await response.json();
+
+            setText("directPassPercent", `${data.percent}%`);
+            setText("directPassTotal", data.total_bestenevaya);
+            setText("directPassCount", data.direct_count);
+        }
+
+        function renderOldestSnpCars(items) {
+            const tbody = document.getElementById("oldestSnpCarsTable");
+            if (!tbody) return;
+
+            tbody.innerHTML = "";
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-top-defect">Нет машин на СНП</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const comments = item.comments && item.comments.length > 0
+                    ? item.comments.join("; ")
+                    : "Причина не указана";
+
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${item.vin || ""}</td>
+                    <td>${item.model || ""}</td>
+                    <td style="text-align:center; font-weight:bold;">${item.days_on_snp}</td>
+                    <td>${comments}</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderLatestDaySnpCars(items) {
+            const tbody = document.getElementById("latestDaySnpCarsTable");
+            if (!tbody) return;
+
+            tbody.innerHTML = "";
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-top-defect">Нет машин на СНП за выбранный день</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const comments = item.comments && item.comments.length > 0
+                    ? item.comments.join("; ")
+                    : "Причина не указана";
+
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${item.vin || ""}</td>
+                    <td>${item.model || ""}</td>
+                    <td style="text-align:center; font-weight:bold;">${item.when || ""}</td>
+                    <td>${comments}</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        loadSnpBlocks();
+        loadDirectPass();
+    </script>
+</body>
+</html>

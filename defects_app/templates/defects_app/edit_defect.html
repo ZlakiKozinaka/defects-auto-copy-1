@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Редактирование дефекта</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+        }
+
+        .container {
+            width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .field {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field label {
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .btn,
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 220px;
+            height: 56px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: #b9a7cc;
+            color: black;
+        }
+
+        .btn-secondary {
+            background: #d9d9d9;
+            color: black;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+
+        .errorlist {
+            color: #b00020;
+            margin: 5px 0 0 0;
+            padding-left: 18px;
+        }
+
+        .non-field-errors {
+            color: #b00020;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .info {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f1edf6;
+            border-radius: 8px;
+        }
+
+        .photo-upload-box {
+            border: 2px dashed #b9a7cc;
+            background: #f7f4fa;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .photo-info {
+            font-size: 15px;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .photo-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-modal-window {
+            background: white;
+            width: 850px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .photo-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 8px;
+            background: #fafafa;
+            text-align: center;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .hidden-file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Редактирование дефекта для {{ car.vin }}</h2>
+
+    <div class="info">
+        Дата создания дефекта: {{ defect.data|date:"d.m.Y H:i:s" }}
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="non-field-errors">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="from_page" value="{{ from_page }}">
+
+        <div class="field">
+            <label>{{ form.smena.label }}</label>
+            {{ form.smena }}
+            {{ form.smena.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.mesto.label }}</label>
+            {{ form.mesto }}
+            {{ form.mesto.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.tip.label }}</label>
+            {{ form.tip }}
+            {{ form.tip.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.oblast_search.label }}</label>
+            {{ form.oblast_search }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.oblast.label }}</label>
+            {{ form.oblast }}
+            {{ form.oblast.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.greyd.label }}</label>
+            {{ form.greyd }}
+            {{ form.greyd.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.otvetstvennyj.label }}</label>
+            {{ form.otvetstvennyj }}
+            {{ form.otvetstvennyj.errors }}
+        </div>
+
+        <div class="field">
+            <label>{{ form.kommentarij.label }}</label>
+            {{ form.kommentarij }}
+            {{ form.kommentarij.errors }}
+        </div>
+
+        <div class="photo-upload-box">
+            <strong>Фото дефекта</strong>
+
+            <div class="photo-info">
+                Уже загруженные фото отображаются ниже. Новые фото можно добавить дополнительно.
+            </div>
+
+            {% if defect.photos.all %}
+                <div class="photo-gallery">
+                    {% for photo in defect.photos.all %}
+                        <div class="photo-card">
+                            <a href="{{ photo.image.url }}" target="_blank">
+                                <img src="{{ photo.image.url }}" alt="Фото дефекта">
+                            </a>
+                            <div class="photo-info">
+                                {{ photo.uploaded_at|date:"d.m.Y H:i:s" }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="photo-info">
+                    Загруженных фото пока нет.
+                </div>
+            {% endif %}
+
+            <div style="margin-top: 15px;">
+                <button type="button" class="btn" onclick="openPhotoModal()">
+                    Добавить фото
+                </button>
+            </div>
+
+            <div class="photo-info" id="selectedPhotoText">
+                Новые фото не выбраны.
+            </div>
+
+            {{ form.photos.errors }}
+        </div>
+
+        <div class="photo-modal-overlay" id="photoModal">
+            <div class="photo-modal-window">
+                <h2>Добавление фото</h2>
+
+                <p>
+                    Нажмите кнопку ниже, чтобы сделать фото или выбрать изображения из галереи.
+                </p>
+
+                <input
+                    type="file"
+                    name="photos"
+                    id="photoInput"
+                    class="hidden-file-input"
+                    accept="image/*"
+                    multiple
+                >
+
+                <button type="button" class="btn" onclick="document.getElementById('photoInput').click()">
+                    Сделать / выбрать фото
+                </button>
+
+                <div class="photo-gallery" id="photoPreviewGallery"></div>
+
+                <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn-secondary" onclick="closePhotoModal()">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn">Сохранить изменения</button>
+            {% if from_page == "quality" %}
+                <a href="/quality/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+            {% elif from_page == "vh1" %}
+                <a href="/vh1/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+            {% elif from_page == "okline" %}
+                <a href="/okline/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+            {% elif from_page == "dovodka" %}
+                <a href="/dovodka/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+            {% else %}
+                <a href="/?car_id={{ car.id }}" class="btn-secondary">Отмена</a>
+            {% endif %}
+    </form>
+</div>
+
+<script>
+    const oblastSearchInput = document.getElementById("id_oblast_search");
+    const oblastSelect = document.getElementById("id_oblast");
+
+    const originalOblastOptions = Array.from(oblastSelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        selected: option.selected
+    }));
+
+    function filterOblastOptions() {
+        const query = oblastSearchInput.value.trim().toLowerCase();
+        const currentValue = oblastSelect.value;
+
+        oblastSelect.innerHTML = "";
+
+        originalOblastOptions.forEach(function(item) {
+            const isEmpty = item.value === "";
+            const matches = item.text.toLowerCase().includes(query);
+
+            if (isEmpty || matches) {
+                const option = document.createElement("option");
+                option.value = item.value;
+                option.textContent = item.text;
+
+                if (item.value === currentValue) {
+                    option.selected = true;
+                }
+
+                oblastSelect.appendChild(option);
+            }
+        });
+        
+    }
+        function fixRussianKeyboardVin(value) {
+            const map = {
+                "Й": "Q", "Ц": "W", "У": "E", "К": "R", "Е": "T", "Н": "Y", "Г": "U", "Ш": "I", "Щ": "O", "З": "P",
+                "Ф": "A", "Ы": "S", "В": "D", "А": "F", "П": "G", "Р": "H", "О": "J", "Л": "K", "Д": "L",
+                "Я": "Z", "Ч": "X", "С": "C", "М": "V", "И": "B", "Т": "N", "Ь": "M"
+            };
+
+            return value
+                .toUpperCase()
+                .split("")
+                .map(char => map[char] || char)
+                .join("");
+        }
+
+    oblastSearchInput.addEventListener("input", filterOblastOptions);
+
+    function openPhotoModal() {
+        const modal = document.getElementById("photoModal");
+        if (modal) {
+            modal.style.display = "flex";
+        }
+    }
+
+    function closePhotoModal() {
+        const modal = document.getElementById("photoModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    const photoInput = document.getElementById("photoInput");
+    const photoPreviewGallery = document.getElementById("photoPreviewGallery");
+    const selectedPhotoText = document.getElementById("selectedPhotoText");
+
+    if (photoInput) {
+        photoInput.addEventListener("change", function () {
+            photoPreviewGallery.innerHTML = "";
+
+            const files = Array.from(photoInput.files);
+
+            if (files.length === 0) {
+                selectedPhotoText.textContent = "Фото пока не выбраны.";
+                return;
+            }
+
+            selectedPhotoText.textContent = `Выбрано фото: ${files.length}`;
+
+            files.forEach(function (file) {
+                const reader = new FileReader();
+
+                reader.onload = function (event) {
+                    const card = document.createElement("div");
+                    card.className = "photo-card";
+
+                    card.innerHTML = `
+                        <img src="${event.target.result}" alt="Фото дефекта">
+                        <div class="photo-info">${file.name}</div>
+                    `;
+
+                    photoPreviewGallery.appendChild(card);
+                };
+
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+</script>
+
+</body>
+</html>

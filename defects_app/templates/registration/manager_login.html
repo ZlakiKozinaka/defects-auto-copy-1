@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <!-- <link rel="icon" type="image/png" href="{% static 'icons/icon_defects.png' %}"> -->
+    <meta charset="UTF-8">
+    <title>Вход для начальника</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 500px;
+            margin: 40px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .errorlist {
+            color: #b00020;
+            margin: 5px 0 0 0;
+            padding-left: 18px;
+        }
+
+        .bottom-link {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .bottom-link a {
+            color: #5c4b77;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">ВХОД ДЛЯ НАЧАЛЬНИКА</div>
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="message error">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn">Войти</button>
+            </form>
+
+            <div class="bottom-link">
+                <a href="/accounts/login/">Обычный вход сотрудника</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

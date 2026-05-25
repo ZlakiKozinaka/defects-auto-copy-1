@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Выгрузка созданных машин</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 25px auto;
+        }
+
+        .block {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .periods {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .custom-period {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field label {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        @media (max-width: 900px) {
+            .custom-period {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ВЫГРУЗКА СОЗДАННЫХ МАШИН
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }}
+
+            <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            <a href="/exports/" class="btn" style="margin-left: 10px;">Все выгрузки</a>
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 10px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <h2>Созданные машины</h2>
+
+            <p>
+                В Excel попадут дата создания, VIN, модель, кто создал, дата прохождения Бестеневой,
+                последняя дата устранения дефектов на Доводке, последняя дата разрешения на OKLine,
+                дата отправки на СГП и рассчитанные жизненные циклы.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <h3>Быстрый выбор периода</h3>
+
+                <div class="periods">
+                    <button type="submit" name="period" value="shift_today" class="btn">Текущая смена 08:00–17:00</button>
+                    <button type="submit" name="period" value="shift_yesterday" class="btn">Прошлая смена 08:00–17:00</button>
+                    <button type="submit" name="period" value="week" class="btn">Неделя</button>
+                    <button type="submit" name="period" value="month" class="btn">Месяц</button>
+                </div>
+            </form>
+
+            <hr style="margin: 25px 0;">
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="period" value="custom">
+
+                <h3>Свой период</h3>
+
+                <div class="custom-period">
+                    <div class="field">
+                        <label>Дата с</label>
+                        <input type="date" name="date_from" class="form-control" required>
+                    </div>
+
+                    <div class="field">
+                        <label>Время с</label>
+                        <input type="time" name="time_from" class="form-control" value="00:00">
+                    </div>
+
+                    <div class="field">
+                        <label>Дата по</label>
+                        <input type="date" name="date_to" class="form-control" required>
+                    </div>
+
+                    <div class="field">
+                        <label>Время по</label>
+                        <input type="time" name="time_to" class="form-control" value="23:59">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn">Скачать Excel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

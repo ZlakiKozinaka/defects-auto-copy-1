@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Планы выпуска</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f3f8;
+            margin: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            background: #b9a7cc;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #d9cdea;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    ПЛАНЫ ВЫПУСКА
+
+    <div style="font-size: 16px; margin-top: 10px;">
+        Пользователь: {{ request.user.username }}
+
+        <a href="/manager/" class="btn" style="margin-left: 15px; text-decoration: none; color: black;">
+            Вернуться
+        </a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="block">
+        <form method="post">
+            {% csrf_token %}
+
+            <input type="date" name="date" required>
+
+            <input
+                type="number"
+                name="plan_count"
+                placeholder="План машин"
+                required
+            >
+
+            <input
+                type="number"
+                name="work_minutes"
+                placeholder="Рабочие минуты"
+                value="450"
+                required
+            >
+
+            <button type="submit" class="btn">
+                Сохранить
+            </button>
+        </form>
+    </div>
+
+    <div class="block">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>План машин</th>
+                    <th>Рабочие минуты</th>
+                    <th>Кто изменил</th>
+                    <th>Когда изменил</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for plan in plans %}
+                <tr>
+                    <td>{{ plan.date|date:"d.m.Y" }}</td>
+                    <td>{{ plan.plan_count }}</td>
+                    <td>{{ plan.work_minutes }}</td>
+                    <td>{{ plan.updated_by }}</td>
+                    <td>{{ plan.updated_at|date:"d.m.Y H:i:s" }}</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

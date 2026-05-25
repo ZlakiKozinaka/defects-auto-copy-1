@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+
+    <meta charset="UTF-8">
+    <title>Ввод дефектов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            flex: 1;
+        }
+
+        .field label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+            text-decoration: none;
+            color: black;
+        }
+
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-link:hover {
+            background: #a48fbc;
+            text-decoration: none;
+            color: black;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dff3e2;
+            color: #216a2f;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        .vin-preview {
+            margin-top: 15px;
+        }
+
+        .vin-boxes {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .vin-cell {
+            width: 32px;
+            height: 42px;
+            border: 1px solid #999;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .vin-preview-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .vin-preview-left {
+            flex: 1;
+            min-width: 500px;
+        }
+
+        .bestenevaya-complete-form {
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .bestenevaya-complete-form .btn {
+            white-space: nowrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+
+        .actions {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .disabled-btn {
+            background: #d7d7d7;
+            color: #666;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+
+        .car-info {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .errorlist {
+            color: #b00020;
+            margin: 5px 0 0 0;
+            padding-left: 18px;
+        }
+
+        .selected-row {
+            background: #e8def4 !important;
+        }
+
+        .action-link-disabled {
+            background: #d7d7d7;
+            color: #666;
+            pointer-events: none;
+            text-decoration: none;
+        }
+
+        .table-row-clickable {
+            cursor: pointer;
+        }
+
+        .top-search-row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .top-search-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .manager-extra-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        #bestenevayaFloatingTimer {
+            position: fixed;
+            top: 58px;
+            right: 18px;
+            width: 360px;
+            z-index: 9999;
+        }
+
+        .timer-panel {
+            border-radius: 14px;
+            padding: 10px 14px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.16);
+            font-family: Bahnschrift SemiLight, Arial, sans-serif;
+        }
+
+        .timer-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+
+        .timer-item-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .timer-item-value {
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .timer-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        .timer-big {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .timer-green {
+            background: #dff3e2;
+            border-left: 7px solid #2e7d32;
+            color: #1f4d27;
+        }
+
+        .timer-yellow {
+            background: #fff4d6;
+            border-left: 7px solid #ff9800;
+            color: #7a5300;
+        }
+
+        .timer-red {
+            background: #fbe4e4;
+            border-left: 7px solid #d32f2f;
+            color: #7a1f1f;
+        }
+
+        @media (max-width: 900px) {
+            .top-search-actions {
+                width: 100%;
+            }
+
+            .top-search-actions .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        ВВОД ДЕФЕКТОВ
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }} |
+            Станция: {{ request.session.station_name }} |
+            Смена: {{ request.session.shift_name }}
+            {% if is_manager %}
+                <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            {% endif %}
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+
+            {% if request.session.station_id == 1 %}
+            <div id="bestenevayaFloatingTimer">
+                <div id="timerContent">
+                    Загрузка...
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <form method="post">
+                {% csrf_token %}
+                {% if car %}
+                    <input type="hidden" name="current_car_id" value="{{ car.id }}">
+                {% endif %}
+
+                <div class="top-search-row">
+                    <div class="field">
+                        <label for="{{ form.vin.id_for_label }}">VIN</label>
+                        {{ form.vin }}
+                        {{ form.vin.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.model.id_for_label }}">Модель</label>
+                        {{ form.model }}
+                        {{ form.model.errors }}
+                    </div>
+
+                    <div class="top-search-actions">
+                        <button type="submit" name="action" value="find" class="btn">
+                            Найти
+                        </button>
+                        <button type="button" class="btn" onclick="clearForm()">
+                            Очистить
+                        </button>
+                    </div>
+                </div>
+
+                {% if is_manager %}
+                    <div class="manager-extra-actions">
+                        <button type="submit" name="action" value="save" class="btn">
+                            Сохранить машину с этим VIN-номером
+                        </button>
+
+                        <a href="/" class="btn btn-link">
+                            Создать новую машину
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+
+            <div class="vin-preview-line">
+                <div class="vin-preview-left">
+                    <div><strong>Визуальное отображение VIN:</strong></div>
+                    <div class="vin-boxes" id="vin-boxes"></div>
+                </div>
+
+                {% if request.session.station_id == 1 and car and not car.proshla_bestenevaya %}
+                    <div class="bestenevaya-complete-form">
+                        <form method="post" action="{% url 'complete_bestenevaya' car.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn">
+                                Машина прошла станцию Бестеневую
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if car %}
+                <div class="car-info">
+                    Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
+                </div>
+            {% endif %}
+
+            {% if request.session.station_id == 1 and car %}
+                <div style="margin-top: 8px; font-size: 16px;">
+                    Проход Бестеневой:
+                    {% if car.proshla_bestenevaya %}
+                        <strong>Да</strong>
+                        {% if car.data_prohoda_bestenevaya %}
+                            ({{ car.data_prohoda_bestenevaya|date:"d.m.Y H:i:s" }})
+                        {% endif %}
+                    {% else %}
+                        <strong>Нет</strong>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="block">
+            <div class="actions">
+                {% if car %}
+                    <a href="{% url 'create_defect' car.id %}" class="btn">
+                        Создать новый дефект
+                    </a>
+
+                    {% if is_manager %}
+                        <a href="#" id="edit-defect-btn" class="btn action-link-disabled">
+                            Редактировать
+                        </a>
+
+                        <a href="#" id="delete-defect-btn" class="btn action-link-disabled">
+                            Удалить
+                        </a>
+                    {% else %}
+                        <button class="disabled-btn" type="button">Редактировать</button>
+                        <button class="disabled-btn" type="button">Удалить</button>
+                    {% endif %}
+                {% else %}
+                    <button class="disabled-btn" type="button">Создать новый дефект</button>
+                    <button class="disabled-btn" type="button">Редактировать</button>
+                    <button class="disabled-btn" type="button">Удалить</button>
+                {% endif %}
+            </div>
+
+            <h3>Дефекты текущей машины</h3>
+
+            {% if car %}
+                {% if defects %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Смена</th>
+                                <th>Место</th>
+                                <th>Тип</th>
+                                <th>Область</th>
+                                <th>Грейд</th>
+                                <th>Ответственный</th>
+                                <th>Станция</th>
+                                <th>Комментарий</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for defect in defects %}
+                                <tr class="table-row-clickable" data-defect-id="{{ defect.id }}">
+                                    <td>{{ defect.data|date:"d.m.Y H:i:s" }}</td>
+                                    <td>{{ defect.smena }}</td>
+                                    <td>{{ defect.mesto }}</td>
+                                    <td>{{ defect.tip }}</td>
+                                    <td>{{ defect.oblast }}</td>
+                                    <td>{{ defect.greyd }}</td>
+                                    <td>{{ defect.otvetstvennyj|default:"" }}</td>
+                                    <td>{{ defect.stanciya|default:"" }}</td>
+                                    <td>{{ defect.kommentarij|default:"" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>Для этой машины пока нет дефектов.</p>
+                {% endif %}
+            {% else %}
+                <p>Сначала найдите или создайте машину по VIN.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="{% static 'js/vin_prefixes.js' %}"></script>
+
+    <script>
+        initVinLogic("id_vin", "id_model", "vin-boxes");
+
+        function clearForm() {
+            window.location.href = "/";
+        }
+
+        const defectRows = document.querySelectorAll(".table-row-clickable");
+        const editBtn = document.getElementById("edit-defect-btn");
+        const deleteBtn = document.getElementById("delete-defect-btn");
+
+        let selectedDefectId = null;
+
+        defectRows.forEach(function(row) {
+            row.addEventListener("click", function() {
+                defectRows.forEach(r => r.classList.remove("selected-row"));
+                this.classList.add("selected-row");
+
+                selectedDefectId = this.dataset.defectId;
+
+                if (editBtn && selectedDefectId) {
+                    editBtn.classList.remove("action-link-disabled");
+                    editBtn.href = `/edit-defect/${selectedDefectId}/`;
+                }
+
+                if (deleteBtn && selectedDefectId) {
+                    deleteBtn.classList.remove("action-link-disabled");
+                    deleteBtn.href = `/delete-defect/${selectedDefectId}/`;
+                }
+            });
+        });
+
+        function loadBestenevayaTimer() {
+            const block = document.getElementById("timerContent");
+            if (!block) return;
+
+            fetch("/bestenevaya/timer-api/")
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.has_plan) {
+                        block.innerHTML = `
+                            <div class="timer-panel timer-red">
+                                <div class="timer-title">План не задан</div>
+                                <div class="timer-item-value" style="text-align:center;">
+                                    ${data.message}
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let cssClass = "timer-green";
+
+                    if (data.status === "yellow") {
+                        cssClass = "timer-yellow";
+                    }
+
+                    if (data.status === "red") {
+                        cssClass = "timer-red";
+                    }
+
+                    block.innerHTML = `
+                        <div class="timer-panel ${cssClass}">
+                            <div class="timer-title">Контроль такта</div>
+
+                            <div class="timer-grid">
+                                <div>
+                                    <div class="timer-item-label">План</div>
+                                    <div class="timer-item-value">${data.plan}</div>
+                                </div>
+
+                                <div>
+                                    <div class="timer-item-label">Факт</div>
+                                    <div class="timer-item-value">${data.fact}</div>
+                                </div>
+
+                                <div>
+                                    <div class="timer-item-label">Должно</div>
+                                    <div class="timer-item-value">${data.expected}</div>
+                                </div>
+
+                                <div>
+                                    <div class="timer-item-label">Отстав.</div>
+                                    <div class="timer-item-value">${data.lag_count}</div>
+                                </div>
+                            </div>
+
+                            <div class="timer-bottom">
+                                <div>
+                                    <div class="timer-item-label">Такт</div>
+                                    <div class="timer-item-value">${data.takt_minutes} мин</div>
+                                </div>
+
+                                <div>
+                                    <div class="timer-item-label">До отметки</div>
+                                    <div class="timer-big">${data.minutes_to_next} мин</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        loadBestenevayaTimer();
+        setInterval(loadBestenevayaTimer, 10000);
+    </script>
+</body>
+</html>

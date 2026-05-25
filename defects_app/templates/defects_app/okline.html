@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>OKLine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            flex: 1;
+        }
+
+        .field label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+            text-decoration: none;
+            color: black;
+        }
+
+        .disabled-btn {
+            background: #d7d7d7;
+            color: #666;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dff3e2;
+            color: #216a2f;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        .car-info {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .vin-preview {
+            margin-top: 15px;
+        }
+
+        .vin-boxes {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .vin-cell {
+            width: 32px;
+            height: 42px;
+            border: 1px solid #999;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+
+        .actions {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .center-cell {
+            text-align: center;
+        }
+
+        .checked-row {
+            background: #f3f0f7;
+        }
+
+        .small-note {
+            margin-top: 10px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .locked-area {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .selected-row {
+            background: #e8def4 !important;
+        }
+
+        .action-link-disabled {
+            background: #d7d7d7;
+            color: #666;
+            pointer-events: none;
+            text-decoration: none;
+        }
+
+        .table-row-clickable {
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.45);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-window {
+            background: white;
+            width: 80%;
+            max-width: 1000px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+
+        .modal-window textarea {
+            width: 100%;
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        .snp-comment-icon {
+            display: inline-block;
+            margin-left: 6px;
+            cursor: help;
+            font-size: 17px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        OKLINE
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }} |
+            Станция: {{ request.session.station_name }} |
+            Смена: {{ request.session.shift_name }}
+
+            {% if is_manager %}
+                <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            {% endif %}
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <div class="row">
+                <form method="post" style="display: flex; gap: 20px; align-items: end; flex-wrap: wrap; width: 100%;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="find">
+
+                    <div class="field">
+                        <label for="{{ form.vin.id_for_label }}">VIN</label>
+                        {{ form.vin }}
+                        {{ form.vin.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.model.id_for_label }}">Модель</label>
+                        {{ form.model }}
+                        {{ form.model.errors }}
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" name="action" value="find" class="btn">Найти</button>
+                        <a href="/okline/" class="btn secondary-btn">Очистить</a>
+                    </div>
+                </form>
+
+                {% if car %}
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="send_snp">
+                        <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                        {% if is_sgp_locked or all_verified %}
+                            <button type="button" class="disabled-btn">Передать на СНП</button>
+                        {% else %}
+                            <button type="button" class="btn" onclick="openSnpModal()">Передать на СНП</button>
+                        {% endif %}
+                    </form>
+
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="send_sgp">
+                        <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                        {% if all_verified %}
+                            <button type="submit" class="btn">Передать на СГП</button>
+                        {% else %}
+                            {% if is_manager %}
+                                <button type="button" class="btn" onclick="openSgpApprovalModal()">
+                                    Передать на СГП
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn" onclick="showWorkerSgpWarning()">
+                                    Передать на СГП
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <div>
+                        <button type="button" class="disabled-btn">Передать на СНП</button>
+                    </div>
+                    <div>
+                        <button type="button" class="disabled-btn">Передать на СГП</button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="vin-preview">
+                <div><strong>Визуальное отображение VIN:</strong></div>
+                <div class="vin-boxes" id="vin-boxes"></div>
+            </div>
+
+            {% if car %}
+                <div class="car-info">
+                    Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="block">
+            <div class="actions">
+                {% if car %}
+                    {% if is_sgp_locked %}
+                        <button type="button" class="disabled-btn">Создать новый дефект</button>
+                        <button type="button" class="disabled-btn">Редактировать</button>
+                        <button type="button" class="disabled-btn">Удалить</button>
+                    {% else %}
+                        <a href="{% url 'create_defect' car.id %}?from_page=okline" class="btn">
+                            Создать новый дефект
+                        </a>
+
+                        {% if is_manager %}
+                            <a href="#" id="edit-defect-btn" class="btn action-link-disabled">
+                                Редактировать
+                            </a>
+
+                            <a href="#" id="delete-defect-btn" class="btn action-link-disabled">
+                                Удалить
+                            </a>
+                        {% else %}
+                            <button type="button" class="disabled-btn">Редактировать</button>
+                            <button type="button" class="disabled-btn">Удалить</button>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <button type="button" class="disabled-btn">Создать новый дефект</button>
+                    <button type="button" class="disabled-btn">Редактировать</button>
+                    <button type="button" class="disabled-btn">Удалить</button>
+                {% endif %}
+            </div>
+
+            <h3>Проверка дефектов</h3>
+
+            {% if car %}
+                <div id="snpModal" class="modal-overlay">
+                    <div class="modal-window">
+                        <h3>Передача на СНП</h3>
+                        <p><strong>VIN:</strong> {{ car.vin }}</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="send_snp">
+                            <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                            {% if snp_defects %}
+                                <p><strong>Неподтвержденные дефекты:</strong></p>
+
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>№ дефекта</th>
+                                            <th>Тип</th>
+                                            <th>Область</th>
+                                            <th>Комментарий причины СНП</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for defect in snp_defects %}
+                                            <tr>
+                                                <td>{{ defect.id }}</td>
+                                                <td>{{ defect.tip }}</td>
+                                                <td>{{ defect.oblast }}</td>
+                                                <td>
+                                                    <textarea name="snp_comment_{{ defect.id }}" required></textarea>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <p>Неподтвержденных дефектов нет.</p>
+                            {% endif %}
+
+                            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" class="btn secondary-btn" onclick="closeSnpModal()">Отмена</button>
+                                <button type="submit" class="btn">Сохранить и передать на СНП</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% if car %}
+                    <div id="sgpApprovalModal" class="modal-overlay">
+                        <div class="modal-window">
+                            <h3 style="color:#912d2d;">Внимание!</h3>
+
+                            <p>
+                                <strong>
+                                    У машины остались неустраненные и(или) непроверенные дефекты.
+                                    Данные дефекты необходимо согласовать перед отправкой на СГП.
+                                </strong>
+                            </p>
+
+                            <p><strong>VIN:</strong> {{ car.vin }}</p>
+
+                            {% if sgp_problem_defects %}
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>№ дефекта</th>
+                                            <th>Тип</th>
+                                            <th>Область</th>
+                                            <th>Грейд</th>
+                                            <th>Ответственный</th>
+                                            <th>Устранен</th>
+                                            <th>Проверен</th>
+                                            <th>Комментарий</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for defect in sgp_problem_defects %}
+                                            <tr>
+                                                <td>{{ defect.id }}</td>
+                                                <td>{{ defect.tip }}</td>
+                                                <td>{{ defect.oblast }}</td>
+                                                <td>{{ defect.greyd }}</td>
+                                                <td>{{ defect.otvetstvennyj|default:"" }}</td>
+                                                <td>
+                                                    {% if defect.ustraneno %}
+                                                        Да
+                                                    {% else %}
+                                                        Нет
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if defect.proveren %}
+                                                        Да
+                                                    {% else %}
+                                                        Нет
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ defect.kommentarij|default:"" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                                <form method="post" style="margin-top:20px;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve_and_send_sgp">
+                                    <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                                    <div class="message error">
+                                        <strong>Внимание!</strong><br>
+                                        Вы согласовываете дефекты под пользователем <strong>{{ request.user.username }}</strong>.
+                                        Данные запишутся в базу, и изменить позднее их нельзя.
+                                        Если необходимо, укажите комментарий:
+                                    </div>
+
+                                    <textarea name="approval_comment" placeholder="Комментарий согласования"></textarea>
+
+                                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                                        <button type="button" class="btn secondary-btn" onclick="closeSgpApprovalModal()">Отмена</button>
+                                        <button type="submit" class="btn">
+                                            Согласовать все дефекты и передать на СГП
+                                        </button>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <p>Проблемных дефектов нет.</p>
+
+                                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                                    <button type="button" class="btn secondary-btn" onclick="closeSgpApprovalModal()">Закрыть</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if car %}
+                {% if defects %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save_checks">
+                        <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Область</th>
+                                    <th>Грейд</th>
+                                    <th>Ответственный</th>
+                                    <th>Станция</th>
+                                    <th>Комментарий</th>
+                                    <th>Устранен</th>
+                                    <th>Кто устранил</th>
+                                    <th>Дата устранения</th>
+                                    <th>Проверен</th>
+                                    <th>Кто разрешил</th>
+                                    <th>Дата разрешения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for defect in defects %}
+                                    <tr class="table-row-clickable {% if defect.proveren %}checked-row{% endif %}" data-defect-id="{{ defect.id }}">
+                                        <td>{{ defect.tip }}</td>
+                                        <td>{{ defect.oblast }}</td>
+                                        <td>{{ defect.greyd }}</td>
+                                        <td>{{ defect.otvetstvennyj|default:"" }}</td>
+                                        <td>{{ defect.stanciya|default:"" }}</td>
+                                        <td>
+                                            {{ defect.kommentarij|default:"" }}
+
+                                            {% with comments=defect.snp_comments.all %}
+                                                {% if comments %}
+                                                    <span class="snp-comment-icon" title="{% for c in comments %}{{ c.comment }}{% if not forloop.last %}&#10;{% endif %}{% endfor %}">
+                                                        💬
+                                                    </span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+
+                                        <td class="center-cell">
+                                            {% if defect.ustraneno %}
+                                                <input type="checkbox" checked disabled>
+                                            {% else %}
+                                                <input type="checkbox" disabled>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>{{ defect.kto_ustranil|default:"" }}</td>
+                                        <td>{{ defect.data_ustraneniya|date:"d.m.Y H:i:s"|default:"" }}</td>
+
+                                        <td class="center-cell">
+                                            {% if defect.proveren %}
+                                                <input type="checkbox" checked disabled>
+                                            {% elif defect.ustraneno %}
+                                                <input type="checkbox" name="verified_defects" value="{{ defect.id }}">
+                                            {% else %}
+                                                <input type="checkbox" disabled>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>{{ defect.kto_razreshil|default:"" }}</td>
+                                        <td>{{ defect.data_razresheniya|date:"d.m.Y H:i:s"|default:"" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 20px;">
+                            <button type="submit" class="btn">Сохранить изменения</button>
+                        </div>
+
+                        <div class="small-note">
+                            Сначала дефект устраняется на Доводке. После этого на OKLine становится доступна отметка «Проверен».
+                            Уже сохраненные отметки обычный оператор снять не может.
+                        </div>
+                    </form>
+                {% else %}
+                    <p>Для этой машины дефекты не найдены.</p>
+                {% endif %}
+            {% else %}
+                <p>Сначала найдите машину по VIN.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="{% static 'js/vin_prefixes.js' %}"></script>
+
+    <script>
+        initVinLogic("id_vin", "id_model", "vin-boxes");
+
+        function openSnpModal() {
+            const modal = document.getElementById("snpModal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeSnpModal() {
+            const modal = document.getElementById("snpModal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        const defectRows = document.querySelectorAll(".table-row-clickable");
+        const editBtn = document.getElementById("edit-defect-btn");
+        const deleteBtn = document.getElementById("delete-defect-btn");
+
+        let selectedDefectId = null;
+
+        defectRows.forEach(function(row) {
+            row.addEventListener("click", function(event) {
+                if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") {
+                    return;
+                }
+
+                defectRows.forEach(r => r.classList.remove("selected-row"));
+                this.classList.add("selected-row");
+
+                selectedDefectId = this.dataset.defectId;
+
+                if (editBtn && selectedDefectId) {
+                    editBtn.classList.remove("action-link-disabled");
+                    editBtn.href = `/edit-defect/${selectedDefectId}/?from_page=okline`;
+                }
+
+                if (deleteBtn && selectedDefectId) {
+                    deleteBtn.classList.remove("action-link-disabled");
+                    deleteBtn.href = `/delete-defect/${selectedDefectId}/?from_page=okline`;
+                }
+            });
+        });
+
+        function openSgpApprovalModal() {
+            const modal = document.getElementById("sgpApprovalModal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeSgpApprovalModal() {
+            const modal = document.getElementById("sgpApprovalModal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function showWorkerSgpWarning() {
+            alert("Ваших полномочий не хватает, чтобы отправить машину на СГП при неустраненных и(или) непроверенных дефектах. Пожалуйста, обратитесь к старшим.");
+        }
+    </script>
+</body>
+</html>

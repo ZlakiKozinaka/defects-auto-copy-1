@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>DPHU отчёт</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f1f6;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 52px;
+            font-weight: bold;
+        }
+
+        .top-links {
+            margin-top: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .top-links a {
+            color: black;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+
+        .container {
+            width: 98%;
+            margin: 20px auto;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .filters label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .filters input {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        .filters button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #b9a7cc;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 320px;
+            grid-template-rows: auto auto;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .chart-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 350px !important;
+        }
+
+        .summary {
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .summary h3 {
+            margin-top: 0;
+            font-size: 26px;
+        }
+
+        .summary-block {
+            margin-bottom: 25px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #7a1f1f;
+        }
+
+        .green {
+            color: #2c8b3c;
+        }
+
+        .red {
+            color: #a12828;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>DPHU ОТЧЁТ</h1>
+
+    <div class="top-links">
+        Пользователь: {{ request.user.username }}
+
+        <a href="{% url 'reports' %}">Все отчёты</a>
+        <a href="{% url 'qrqc_dashboard' %}">QRQC</a>
+        <a href="{% url 'manager_dashboard' %}">Панель начальника</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="filters">
+
+        <div>
+            <label>Месяц</label>
+            <input type="month" id="monthPicker" value="{{ selected_month }}">
+        </div>
+
+        <div>
+            <label>День</label>
+            <input type="date" id="dayPicker" value="{{ selected_day }}">
+        </div>
+
+        <button onclick="loadDPHU()">
+            Обновить отчёт
+        </button>
+
+    </div>
+
+    <div class="grid">
+
+        <!-- График 1 -->
+        <div class="card">
+            <div class="chart-title">
+                DPHU за день (количество)
+            </div>
+
+            <canvas id="dayCountChart"></canvas>
+        </div>
+
+        <!-- График 2 -->
+        <div class="card">
+            <div class="chart-title">
+                DPHU за день (%)
+            </div>
+
+            <canvas id="dayPercentChart"></canvas>
+        </div>
+
+        <!-- Сводка -->
+        <div class="card summary">
+
+            <h3>Краткая сводка</h3>
+
+            <div class="summary-block">
+                <div>Дата:</div>
+                <div class="summary-value" id="summaryDate">-</div>
+            </div>
+
+            <div class="summary-block">
+                <div>Факт машин:</div>
+                <div class="summary-value" id="summaryCars">0</div>
+            </div>
+
+            <div class="summary-block">
+                <div>Всего дефектов:</div>
+                <div class="summary-value red" id="summaryDefects">0</div>
+            </div>
+
+            <div class="summary-block">
+                <div>DPHU:</div>
+                <div class="summary-value" id="summaryDPHU">0</div>
+            </div>
+
+        </div>
+
+        <!-- График 3 -->
+        <div class="card">
+            <div class="chart-title">
+                DPHU за месяц (накопительный)
+            </div>
+
+            <canvas id="monthCountChart"></canvas>
+        </div>
+
+        <!-- График 4 -->
+        <div class="card">
+            <div class="chart-title">
+                DPHU за месяц (%)
+            </div>
+
+            <canvas id="monthPercentChart"></canvas>
+        </div>
+
+        <!-- Сводка месяца -->
+        <div class="card summary">
+
+            <h3>Сводка месяца</h3>
+
+            <div class="summary-block">
+                <div>Месяц:</div>
+                <div class="summary-value" id="summaryMonth">-</div>
+            </div>
+
+            <div class="summary-block">
+                <div>Машин за месяц:</div>
+                <div class="summary-value" id="summaryMonthCars">0</div>
+            </div>
+
+            <div class="summary-block">
+                <div>Дефектов:</div>
+                <div class="summary-value red" id="summaryMonthDefects">0</div>
+            </div>
+
+            <div class="summary-block">
+                <div>DPHU:</div>
+                <div class="summary-value green" id="summaryMonthDPHU">0</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let dayCountChart = null;
+let dayPercentChart = null;
+let monthCountChart = null;
+let monthPercentChart = null;
+
+async function loadDPHU() {
+
+    const month = document.getElementById("monthPicker").value;
+    const day = document.getElementById("dayPicker").value;
+
+    const response = await fetch(
+        `/reports/qrqc/dphu-api/?month=${month}&day=${day}`
+    );
+
+    const data = await response.json();
+
+    buildDayCharts(data);
+    buildMonthCharts(data);
+
+    updateSummary(data);
+}
+
+function buildDayCharts(data) {
+
+    const labels = data.responsibles;
+
+    const dayValues = labels.map(
+        x => data.day_report.counts[x]
+    );
+
+    const dayPercent = labels.map(
+        x => data.day_report.dphu[x]
+    );
+
+    if (dayCountChart) {
+        dayCountChart.destroy();
+    }
+
+    if (dayPercentChart) {
+        dayPercentChart.destroy();
+    }
+
+    dayCountChart = new Chart(
+        document.getElementById("dayCountChart"),
+        {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Количество дефектов",
+                    data: dayValues
+                }]
+            },
+            options: {
+                devicePixelRatio: 3,
+                responsive: true
+            }
+        }
+    );
+
+    dayPercentChart = new Chart(
+        document.getElementById("dayPercentChart"),
+        {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "DPHU %",
+                    data: dayPercent
+                }]
+            },
+            options: {
+                devicePixelRatio: 3,
+                responsive: true
+            }
+        }
+    );
+}
+
+function buildMonthCharts(data) {
+
+    const labels = data.month_report.map(
+        x => x.day
+    );
+
+    const responsibles = data.responsibles;
+
+    const datasetsCount = [];
+    const datasetsPercent = [];
+
+    responsibles.forEach(responsible => {
+
+        datasetsCount.push({
+            label: responsible,
+            data: data.month_report.map(
+                x => x.counts[responsible]
+            ),
+            stack: "stack1"
+        });
+
+        datasetsPercent.push({
+            label: responsible,
+            data: data.month_report.map(
+                x => x.dphu[responsible]
+            ),
+            stack: "stack1"
+        });
+
+    });
+
+    if (monthCountChart) {
+        monthCountChart.destroy();
+    }
+
+    if (monthPercentChart) {
+        monthPercentChart.destroy();
+    }
+
+    monthCountChart = new Chart(
+        document.getElementById("monthCountChart"),
+        {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: datasetsCount
+            },
+            options: {
+                devicePixelRatio: 3,
+                responsive: true,
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true
+                    }
+                }
+            }
+        }
+    );
+
+    monthPercentChart = new Chart(
+        document.getElementById("monthPercentChart"),
+        {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: datasetsPercent
+            },
+            options: {
+                devicePixelRatio: 3,
+                responsive: true,
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true
+                    }
+                }
+            }
+        }
+    );
+}
+
+function updateSummary(data) {
+
+    document.getElementById("summaryDate").innerText =
+        data.day;
+
+    document.getElementById("summaryCars").innerText =
+        data.day_report.cars_fact;
+
+    document.getElementById("summaryDefects").innerText =
+        data.day_report.total_defects;
+
+    document.getElementById("summaryDPHU").innerText =
+        data.day_report.dphu_total.toFixed(2);
+
+    document.getElementById("summaryMonth").innerText =
+        data.month;
+
+    document.getElementById("summaryMonthCars").innerText =
+        data.month_summary.total_cars;
+
+    document.getElementById("summaryMonthDefects").innerText =
+        data.month_summary.total_defects;
+
+    document.getElementById("summaryMonthDPHU").innerText =
+        data.month_summary.dphu_total.toFixed(2);
+}
+
+loadDPHU();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Дашборд дефектов по типам</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            color: #000;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 24px;
+            text-align: center;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .header-links {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .header-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            color: black;
+            text-decoration: none;
+            padding: 9px 14px;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+
+        .header-links a:hover {
+            background: #a48fbc;
+            color: black;
+        }
+
+        .subheader {
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        .subheader a {
+            color: black;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .subheader a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            width: 96%;
+            margin: 20px auto;
+        }
+
+        .filters {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            display: flex;
+            gap: 14px;
+            align-items: end;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: bold;
+        }
+
+        select,
+        input {
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #b9a7cc;
+            border-radius: 8px;
+            background-color: white;
+            transition: 0.2s;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+
+            background-image:
+                linear-gradient(45deg, transparent 50%, #6f5a8f 50%),
+                linear-gradient(135deg, #6f5a8f 50%, transparent 50%);
+            background-position:
+                calc(100% - 18px) center,
+                calc(100% - 12px) center;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #8f78aa;
+            box-shadow: 0 0 0 2px rgba(185, 167, 204, 0.35);
+        }
+
+        button,
+        .btn {
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 11px 18px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover,
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .period-info {
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2.2fr 1fr;
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+            overflow: hidden;
+        }
+
+        .chart-card h3 {
+            margin: 0 0 12px 0;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .main-card,
+        .small-card {
+            height: 360px;
+            min-height: 360px;
+            box-sizing: border-box;
+        }
+
+        .main-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .small-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .chart-card canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .empty {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid,
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-card,
+            .small-card {
+                min-height: 390px;
+            }
+
+            .main-chart-wrapper,
+            .small-chart-wrapper {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    ДАШБОРД ДЕФЕКТОВ ПО ТИПАМ
+    <div class="header-links">
+        Пользователь: {{ request.user.username }}       
+        <a href="/reports/">Все отчёты</a>
+        <a href="/reports/qrqc/">QRQC</a>
+        <a href="/manager/">Панель начальника</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="filters">
+        <div class="field">
+            <label>Период</label>
+            <select id="period">
+                <option value="today">Сегодня</option>
+                <option value="shift">Смена 08:00–17:00</option>
+                <option value="week">Неделя</option>
+                <option value="month">Месяц</option>
+                <option value="custom">Свой период</option>
+            </select>
+        </div>
+
+        <div class="field custom-field">
+            <label>Дата с</label>
+            <input type="date" id="date_from">
+        </div>
+
+        <div class="field custom-field">
+            <label>Время с</label>
+            <input type="time" id="time_from" value="00:00">
+        </div>
+
+        <div class="field custom-field">
+            <label>Дата по</label>
+            <input type="date" id="date_to">
+        </div>
+
+        <div class="field custom-field">
+            <label>Время по</label>
+            <input type="time" id="time_to" value="23:59">
+        </div>
+
+        <button type="button" onclick="loadDashboard()">Показать</button>
+        <a href="/reports/" class="btn">Назад</a>
+        <button type="button" onclick="exportDashboard()">Выгрузить Excel</button>
+    </div>
+
+    <div class="period-info" id="periodInfo"></div>
+
+    <div class="dashboard-grid">
+        <div class="chart-card small-card">
+            <h3>Технический отдел</h3>
+            <div class="small-chart-wrapper">
+                <canvas id="technicalChart"></canvas>
+            </div>
+            <div id="technicalEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+
+        <div class="chart-card main-card">
+            <h3>Все отделы</h3>
+            <div class="main-chart-wrapper">
+                <canvas id="allChart"></canvas>
+            </div>
+            <div id="allEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+
+        <div class="chart-card small-card">
+            <h3>Инженерный отдел</h3>
+            <div class="small-chart-wrapper">
+                <canvas id="engineeringChart"></canvas>
+            </div>
+            <div id="engineeringEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+    </div>
+
+    <div class="bottom-grid">
+        <div class="chart-card small-card">
+            <h3>Поставщики</h3>
+            <div class="small-chart-wrapper">
+                <canvas id="suppliersChart"></canvas>
+            </div>
+            <div id="suppliersEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+
+        <div class="chart-card small-card">
+            <h3>Логистика</h3>
+            <div class="small-chart-wrapper">
+                <canvas id="logisticsChart"></canvas>
+            </div>
+            <div id="logisticsEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+
+        <div class="chart-card small-card">
+            <h3>Производство</h3>
+            <div class="small-chart-wrapper">
+                <canvas id="productionChart"></canvas>
+            </div>
+            <div id="productionEmpty" class="empty" style="display:none;">Нет данных</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const charts = {};
+
+    const chartColors = {
+        all: {
+            bar: "#8d79aa",
+            line: "#b04a6f"
+        },
+        technical: {
+            bar: "#9b8bb3",
+            line: "#b04a6f"
+        },
+        engineering: {
+            bar: "#8fa8a1",
+            line: "#b04a6f"
+        },
+        suppliers: {
+            bar: "#c7a98b",
+            line: "#b04a6f"
+        },
+        logistics: {
+            bar: "#8ea9c1",
+            line: "#b04a6f"
+        },
+        production: {
+            bar: "#b7a4c7",
+            line: "#b04a6f"
+        }
+    };
+
+    function toggleCustomFields() {
+        const period = document.getElementById("period").value;
+        const customFields = document.querySelectorAll(".custom-field");
+
+        customFields.forEach(field => {
+            field.style.display = period === "custom" ? "flex" : "none";
+        });
+    }
+
+    document.getElementById("period").addEventListener("change", toggleCustomFields);
+
+    function buildUrl() {
+        const period = document.getElementById("period").value;
+        let url = `/reports/defect-types/api/?period=${period}`;
+
+        if (period === "custom") {
+            const dateFrom = document.getElementById("date_from").value;
+            const timeFrom = document.getElementById("time_from").value;
+            const dateTo = document.getElementById("date_to").value;
+            const timeTo = document.getElementById("time_to").value;
+
+            url += `&date_from=${dateFrom}&time_from=${timeFrom}&date_to=${dateTo}&time_to=${timeTo}`;
+        }
+
+        return url;
+    }
+
+    function renderChart(canvasId, emptyId, data, isMain, colors) {
+        const canvas = document.getElementById(canvasId);
+        const empty = document.getElementById(emptyId);
+        const wrapper = canvas.parentElement;
+
+        if (charts[canvasId]) {
+            charts[canvasId].destroy();
+        }
+
+        if (!data || data.length === 0) {
+            wrapper.style.display = "none";
+            empty.style.display = "flex";
+            return;
+        }
+
+        wrapper.style.display = "block";
+        empty.style.display = "none";
+
+        const labels = data.map(item => item.type);
+        const counts = data.map(item => item.count);
+        const pareto = data.map(item => item.pareto);
+
+        charts[canvasId] = new Chart(canvas, {
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: "bar",
+                        label: "Количество дефектов",
+                        data: counts,
+                        yAxisID: "y",
+                        backgroundColor: colors.bar,
+                        borderColor: colors.bar,
+                        borderWidth: 1,
+                        order: 10
+                    },
+                    {
+                        type: "line",
+                        label: "Парето, %",
+                        data: pareto,
+                        yAxisID: "y1",
+                        borderColor: "#b64b73",
+                        backgroundColor: "#b64b73",
+                        borderWidth: isMain ? 3 : 2,
+                        pointRadius: isMain ? 4 : 3,
+                        pointHoverRadius: isMain ? 6 : 5,
+                        tension: 0.25,
+                        fill: false,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                devicePixelRatio: 3,
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+                layout: {
+                    padding: {
+                        top: 5,
+                        right: 8,
+                        bottom: 0,
+                        left: 5
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        align: "center",
+
+                        labels: {
+                            boxWidth: 20,
+                            boxHeight: 8,
+                            padding: 10,
+
+                            font: {
+                                size: isMain ? 12 : 10,
+                                family: "Arial"
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 90,
+                            font: {
+                                size: isMain ? 13 : 11,
+                                family: "Arial"
+                            }
+                        },
+
+                        title: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                size: isMain ? 13 : 11,
+                                family: "Arial"
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: "Количество",
+                            font: {
+                                size: isMain ? 14 : 12,
+                                family: "Arial",
+                                weight: "bold"
+                            }
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        max: 100,
+                        position: "right",
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + "%";
+                            },
+                            font: {
+                                size: isMain ? 13 : 11,
+                                family: "Arial"
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: "%",
+                            font: {
+                                size: isMain ? 14 : 12,
+                                family: "Arial",
+                                weight: "bold"
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadDashboard() {
+        fetch(buildUrl())
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                document.getElementById("periodInfo").textContent =
+                    `Период: ${data.start} — ${data.end}`;
+
+                renderChart("allChart", "allEmpty", data.charts.all, true, chartColors.all);
+                renderChart("technicalChart", "technicalEmpty", data.charts.technical, false, chartColors.technical);
+                renderChart("engineeringChart", "engineeringEmpty", data.charts.engineering, false, chartColors.engineering);
+                renderChart("suppliersChart", "suppliersEmpty", data.charts.suppliers, false, chartColors.suppliers);
+                renderChart("logisticsChart", "logisticsEmpty", data.charts.logistics, false, chartColors.logistics);
+                renderChart("productionChart", "productionEmpty", data.charts.production, false, chartColors.production);
+            })
+            .catch(error => {
+                alert("Не удалось загрузить данные дашборда.");
+                console.error(error);
+            });
+    }
+
+    function exportDashboard() {
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/reports/defect-types/export/";
+
+        const csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "csrfmiddlewaretoken";
+        csrfInput.value = "{{ csrf_token }}";
+        form.appendChild(csrfInput);
+
+        const fields = ["period", "date_from", "time_from", "date_to", "time_to"];
+
+        fields.forEach(function(fieldId) {
+            const element = document.getElementById(fieldId);
+
+            if (element) {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = fieldId;
+                input.value = element.value;
+                form.appendChild(input);
+            }
+        });
+
+        const chartImages = {
+            all: document.getElementById("allChart").toDataURL("image/png"),
+            technical: document.getElementById("technicalChart").toDataURL("image/png"),
+            engineering: document.getElementById("engineeringChart").toDataURL("image/png"),
+            suppliers: document.getElementById("suppliersChart").toDataURL("image/png"),
+            logistics: document.getElementById("logisticsChart").toDataURL("image/png"),
+            production: document.getElementById("productionChart").toDataURL("image/png")
+        };
+
+        const imagesInput = document.createElement("input");
+        imagesInput.type = "hidden";
+        imagesInput.name = "chart_images";
+        imagesInput.value = JSON.stringify(chartImages);
+        form.appendChild(imagesInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    toggleCustomFields();
+    loadDashboard();
+</script>
+
+</body>
+</html>

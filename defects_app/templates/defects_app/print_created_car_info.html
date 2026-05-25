@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Печать важного листа автомобиля</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .no-print {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #b9a7cc;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+        }
+
+        .page {
+            width: 100%;
+            min-height: 260mm;
+            box-sizing: border-box;
+        }
+
+        .vin-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            font-size: 16px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            width: 40%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">Печать</button>
+    </div>
+
+    <div class="page">
+        <div class="vin-title">Информация по автомобилю</div>
+
+        {% if plan_vin %}
+            <table>
+                <tbody>
+                    <tr><th>VIN номер</th><td>{{ plan_vin.vin }}</td></tr>
+                    <tr><th>Модель</th><td>{{ plan_vin.model }}</td></tr>
+                    <tr><th>Цвет кузова</th><td>{{ plan_vin.cvet_kuzova }}</td></tr>
+                    <tr><th>Цвет салона</th><td>{{ plan_vin.cvet_salona }}</td></tr>
+                    <tr><th>Количество мест</th><td>{{ kolichestvo_mest }}</td></tr>
+                    <tr><th>Комплектация</th><td>{{ plan_vin.komplektaciya }}</td></tr>
+                    <tr><th>ОТТС</th><td>{{ plan_vin.otts }}</td></tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 35px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">Штрихкод VIN</div>
+                {{ vin_barcode_svg|safe }}
+                <div style="font-size: 18px; font-weight: bold; margin-top: 18px;">
+                    Дата и время создания: {{ car.data_sozdaniya|date:"d.m.Y H:i:s" }}
+                </div>
+            </div>
+        {% else %}
+            <p>Плановая информация по VIN не найдена.</p>
+            <div style="font-size: 18px; font-weight: bold; margin-top: 18px; text-align: center;">
+                Дата и время создания: {{ car.data_sozdaniya|date:"d.m.Y H:i:s" }}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        window.onload = function () {
+            setTimeout(function () {
+                window.print();
+            }, 300);
+        };
+    </script>
+</body>
+</html>
