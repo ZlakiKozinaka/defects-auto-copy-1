@@ -343,6 +343,28 @@
                     Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
                 </div>
             {% endif %}
+
+            {% if car and status_history %}
+                <div style="margin-top: 8px; font-size: 16px;">
+                    {% for status_item in status_history %}
+                        {% if status_item.status == "СНП" %}
+                            <div>
+                                {% if forloop.counter == 1 %}
+                                    Машина отправлена на СНП
+                                {% else %}
+                                    Машина отправлена на СНП снова
+                                {% endif %}
+                                ({{ status_item.data_statusa|date:"d.m.Y H:i:s" }})
+                            </div>
+                        {% elif status_item.status == "СГП" %}
+                            <div>
+                                Машина ушла на СГП
+                                ({{ status_item.data_statusa|date:"d.m.Y H:i:s" }})
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
 
         <div class="block">
