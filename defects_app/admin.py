@@ -71,3 +71,83 @@ class VinPrefixAdmin(admin.ModelAdmin):
         "prefix",
         "comment",
     )
+
+class ContainerSealInline(admin.TabularInline):
+    model = ContainerSeal
+    extra = 1
+
+
+class ContainerReceiptPhotoInline(admin.TabularInline):
+    model = ContainerReceiptPhoto
+    extra = 1
+
+class ContainerCarInline(admin.TabularInline):
+    model = ContainerCar
+    extra = 0
+    readonly_fields = (
+        "avto",
+        "accepted_by",
+        "accepted_at",
+        "comment",
+    )
+
+@admin.register(Container)
+class ContainerAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "number",
+        "is_active",
+    )
+    search_fields = (
+        "number",
+    )
+
+
+@admin.register(ContainerReceipt)
+class ContainerReceiptAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "daily_number",
+        "receipt_date",
+        "container",
+        "vehicle_number",
+        "created_by",
+        "created_at",
+    )
+
+    search_fields = (
+        "container__number",
+        "vehicle_number",
+        "components_name",
+    )
+
+    list_filter = (
+        "receipt_date",
+        "created_at",
+    )
+
+    inlines = [
+        ContainerSealInline,
+        ContainerReceiptPhotoInline,
+        ContainerCarInline,
+    ]
+
+@admin.register(ContainerCar)
+class ContainerCarAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "receipt",
+        "avto",
+        "accepted_by",
+        "accepted_at",
+    )
+
+    search_fields = (
+        "avto__vin",
+        "receipt__container__number",
+        "accepted_by",
+    )
+
+    list_filter = (
+        "accepted_at",
+    )

@@ -1,6 +1,6 @@
 from django.db.models import Q, OuterRef, Subquery
 
-from defects_app.models import Avtomobili, Defekty, StatusAvto
+from defects_app.models import Avtomobili, Defekty, StatusAvto, ContainerReceipt
 
 
 def get_car_by_id(car_id):
@@ -77,3 +77,8 @@ def get_status_history_for_car(car):
     return StatusAvto.objects.filter(
         avto=car
     ).order_by("data_statusa")
+
+def get_latest_container_receipts(limit=10):
+    return ContainerReceipt.objects.select_related(
+        "container"
+    ).order_by("-created_at")[:limit]

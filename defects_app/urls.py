@@ -7,6 +7,7 @@ from .views import (
     delete_defect,
     okline_view,
     complete_bestenevaya,
+    print_bestenevaya_defects_view,
     telematika_view,
     glonass_view,
     batareya_view,
@@ -62,12 +63,17 @@ from .views import (
     export_defect_types_dashboard_view,
     department_hub_view,
     department_section_view,
+    container_receipts_view,
+    container_receipt_detail_view,
+    upload_container_car_photos_view,
+    print_container_receipt_view,
 )
 
 urlpatterns = [
     path("", home, name="home"),
     path("create-defect/<int:car_id>/", create_defect, name="create_defect"),
     path("edit-defect/<int:defect_id>/", edit_defect, name="edit_defect"),
+    path("print-bestenevaya-defects/<int:car_id>/", print_bestenevaya_defects_view, name="print_bestenevaya_defects"),
     path("delete-defect/<int:defect_id>/", delete_defect, name="delete_defect"),
     path("okline/", okline_view, name="okline"),
     path("complete-bestenevaya/<int:car_id>/", complete_bestenevaya, name="complete_bestenevaya"),
@@ -127,4 +133,8 @@ urlpatterns = [
     path("reports/defect-types/export/", export_defect_types_dashboard_view, name="export_defect_types_dashboard"),
     path("department-hub/", department_hub_view, name="department_hub"),
     path("department/<str:section>/", department_section_view, name="department_section"),
+    path("container-receipts/", container_receipts_view, name="container_receipts"),
+    path("container-receipts/<int:receipt_id>/", container_receipt_detail_view, name="container_receipt_detail"),
+    path("container-car/<int:container_car_id>/upload-photos/", upload_container_car_photos_view, name="upload_container_car_photos"),
+    path("container-receipts/<int:receipt_id>/print/", print_container_receipt_view, name="print_container_receipt"),
 ]

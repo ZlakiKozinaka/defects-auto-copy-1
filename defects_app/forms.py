@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Mesta
-from .models import Defekty, Tipy, Oblasti, Greydy, Otvetstvennye, Stancii
+from .models import Defekty, Tipy, Oblasti, Greydy, Otvetstvennye, Stancii, ContainerReceipt
 
 VIN_PREFIXES = {
     "FREE": "EDAVGC3B0TL",      #stay   
@@ -274,3 +274,76 @@ class ManagerLoginForm(AuthenticationForm):
         label="Пароль",
         widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
+
+class ContainerReceiptForm(forms.ModelForm):
+    container_number = forms.CharField(
+        label="Номер контейнера",
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Введите номер контейнера",
+            "autocomplete": "off",
+        })
+    )
+
+    seals_text = forms.CharField(
+        label="Номера пломб",
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Например: 123456, 789012",
+            "autocomplete": "off",
+        })
+    )
+
+    photos = MultipleFileField(
+        label="Фото контейнера",
+        required=False
+    )
+
+    class Meta:
+        model = ContainerReceipt
+
+        fields = [
+            "vehicle_number",
+            "components_name",
+            "batch_number",
+            "package_number",
+            "package_marking",
+        ]
+
+        widgets = {
+            "vehicle_number": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "А123БВ 777",
+                "autocomplete": "off",
+            }),
+            "components_name": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Наименование комплектующих изделий",
+            }),
+            "batch_number": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Номер партии",
+            }),
+            "package_number": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Номер упаковки / количество мест",
+            }),
+            "package_marking": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Маркировка упаковочной тары",
+            }),
+        }
+
+    def clean_vehicle_number(self):
+        value = self.cleaned_data["vehicle_number"].strip().upper()
+        pattern = r"^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\s?\d{2,3}$"
+
+        if not re.match(pattern, value):
+            raise forms.ValidationError("Введите номер машины в формате А123БВ 777.")
+
+        return value
+
+    def clean_container_number(self):
+        return self.cleaned_data["container_number"].strip().upper()

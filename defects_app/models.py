@@ -465,3 +465,116 @@ class DefectPhoto(models.Model):
 
     def __str__(self):
         return f"Фото дефекта {self.defect.id}"
+    
+class Container(models.Model):
+    number = models.CharField(max_length=50, verbose_name="Номер контейнера")
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.number
+
+
+class ContainerReceipt(models.Model):
+    daily_number = models.PositiveIntegerField(verbose_name="Номер акта за день")
+    receipt_date = models.DateField(verbose_name="Дата поступления")
+    vehicle_number = models.CharField(max_length=20, verbose_name="Номер машины")
+    container = models.ForeignKey(Container, on_delete=models.PROTECT, related_name="receipts")
+    components_name = models.CharField(max_length=255, verbose_name="Наименование комплектующих изделий", blank=True)
+    batch_number = models.CharField(max_length=100, verbose_name="Номер партии", blank=True)
+    package_number = models.CharField(max_length=100, verbose_name="Номер упаковки", blank=True)
+    package_marking = models.CharField(max_length=255, verbose_name="Маркировка упаковочной тары", blank=True)
+    created_by = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Акт №{self.daily_number} от {self.receipt_date} — {self.container}"
+
+
+class ContainerSeal(models.Model):
+    receipt = models.ForeignKey(ContainerReceipt, on_delete=models.CASCADE, related_name="seals")
+    seal_number = models.CharField(max_length=100, verbose_name="Номер пломбы")
+
+    def __str__(self):
+        return self.seal_number
+
+
+class ContainerReceiptPhoto(models.Model):
+    receipt = models.ForeignKey(ContainerReceipt, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="container_receipts/%Y/%m/%d/")
+    original_name = models.CharField(max_length=255, blank=True)
+    uploaded_by = models.CharField(max_length=150, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+
+class ContainerCar(models.Model):
+    receipt = models.ForeignKey(
+        ContainerReceipt,
+        on_delete=models.CASCADE,
+        related_name="cars",
+    )
+
+    avto = models.ForeignKey(
+        Avtomobili,
+        on_delete=models.CASCADE,
+        related_name="container_receipts",
+    )
+
+    accepted_by = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+
+    accepted_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    comment = models.TextField(
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.avto.vin} -> {self.receipt.container.number}"
+    
+
+class ContainerCarPhoto(models.Model):
+    container_car = models.ForeignKey(
+        ContainerCar,
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+
+    image = models.ImageField(
+        upload_to="container_car_photos/%Y/%m/%d/",
+    )
+
+    original_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+
+    file_size = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+    )
+
+    uploaded_by = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+    )
+
+    uploaded_at = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    def __str__(self):
+        return f"Фото приемки кузова {self.container_car.avto.vin}"
