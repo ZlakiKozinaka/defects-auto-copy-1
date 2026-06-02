@@ -6,6 +6,7 @@ from defects_app.views.defect_views import (
     delete_defect,
     okline_view,
     complete_bestenevaya,
+    print_bestenevaya_defects_view,
     quality_view,
     vh1_view,
     dovodka_view,
@@ -91,4 +92,11 @@ from defects_app.views.vin_views import (
 
 from defects_app.views.photo_views import (
     defect_photo_detail_view,
+)
+
+from defects_app.views.container_views import (
+    container_receipts_view,
+    container_receipt_detail_view,
+    upload_container_car_photos_view,
+    print_container_receipt_view,
 )

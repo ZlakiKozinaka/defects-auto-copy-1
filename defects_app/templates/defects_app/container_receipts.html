@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Приемка контейнеров</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            flex: 1;
+        }
+
+        .field label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-control,
+        input,
+        select,
+        textarea {
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+        }
+
+        .form-control:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border: 3px solid #7d5fa6;
+            background: #fffbe8;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+            color: black;
+            text-decoration: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dff3e2;
+            color: #216a2f;
+        }
+
+        .message.info {
+            background: #e4eefc;
+            color: #1f4f96;
+        }
+
+        .message.error {
+            background: #fbe4e4;
+            color: #912d2d;
+        }
+
+        .sub-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .receipt-number {
+            font-size: 20px;
+            font-weight: bold;
+            background: #f3f0f7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.45);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-window {
+            background: white;
+            width: 80%;
+            max-width: 1000px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+
+        .errorlist {
+            color: #b00020;
+            margin: 5px 0 0 0;
+            padding-left: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        ПРИЕМКА КОНТЕЙНЕРОВ
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }} |
+            Дата: {{ today|date:"d.m.Y" }}
+            <a href="{% url 'open_vh1_station_for_department' %}" class="btn" style="margin-left: 15px;">ВХ1</a>
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="block">
+            <div class="row">
+                <button type="button" class="btn" onclick="openSearchModal()">Найти</button>
+                <button type="button" class="btn" onclick="openCreateBlock()">Создать</button>
+            </div>
+        </div>
+
+        <div class="block" id="createBlock">
+            <div class="sub-title">Создание приемки контейнера</div>
+
+            <div class="receipt-number">
+                Номер акта сформируется автоматически за текущую дату
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+
+                <div class="row">
+                    <div class="field">
+                        <label>Дата поступления</label>
+                        <input type="text" class="form-control" value="{{ today|date:'d.m.Y' }}" disabled>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.vehicle_number.id_for_label }}">Номер машины</label>
+                        {{ form.vehicle_number }}
+                        {{ form.vehicle_number.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.container_number.id_for_label }}">Номер контейнера</label>
+                        {{ form.container_number }}
+                        {{ form.container_number.errors }}
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 20px;">
+                    <div class="field">
+                        <label for="{{ form.seals_text.id_for_label }}">Номера пломб</label>
+                        {{ form.seals_text }}
+                        {{ form.seals_text.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.components_name.id_for_label }}">Наименование комплектующих изделий</label>
+                        {{ form.components_name }}
+                        {{ form.components_name.errors }}
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 20px;">
+                    <div class="field">
+                        <label for="{{ form.batch_number.id_for_label }}">Номер партии</label>
+                        {{ form.batch_number }}
+                        {{ form.batch_number.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.package_number.id_for_label }}">Номер упаковки / количество мест</label>
+                        {{ form.package_number }}
+                        {{ form.package_number.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.package_marking.id_for_label }}">Маркировка упаковочной тары</label>
+                        {{ form.package_marking }}
+                        {{ form.package_marking.errors }}
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 20px;">
+                    <div class="field">
+                        <label for="{{ form.photos.id_for_label }}">Фото контейнера</label>
+                        {{ form.photos }}
+                        {{ form.photos.errors }}
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <button type="submit" class="btn">Сохранить приемку</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="block">
+            <div class="sub-title">Последние 10 приемок</div>
+
+            {% if latest_receipts %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>№ акта</th>
+                            <th>Дата</th>
+                            <th>Контейнер</th>
+                            <th>Машина</th>
+                            <th>Кем создан</th>
+                            <th>Когда создан</th>
+                            <th>Открыть</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for receipt in latest_receipts %}
+                            <tr>
+                                <td>{{ receipt.daily_number }}</td>
+                                <td>{{ receipt.receipt_date|date:"d.m.Y" }}</td>
+                                <td>{{ receipt.container.number }}</td>
+                                <td>{{ receipt.vehicle_number }}</td>
+                                <td>{{ receipt.created_by }}</td>
+                                <td>{{ receipt.created_at|date:"d.m.Y H:i:s" }}</td>
+                                <td>
+                                    <a class="btn" href="{% url 'container_receipt_detail' receipt.id %}">
+                                        Открыть
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>Приемок пока нет.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div id="searchModal" class="modal-overlay" {% if search_was_submitted %}style="display:flex;"{% endif %}>
+        <div class="modal-window">
+            <h3>Поиск приемки контейнера</h3>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="search">
+
+                <div class="row">
+                    <div class="field">
+                        <label>Номер контейнера</label>
+                        <input type="text" name="search_container_number" class="form-control" value="{{ search_container_number }}" placeholder="Введите номер контейнера">
+                    </div>
+
+                    <div class="field">
+                        <label>Месяц</label>
+                        <input type="month" name="search_month" class="form-control" value="{{ search_month }}">
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn">Найти</button>
+                        <button type="button" class="btn" onclick="closeSearchModal()">Закрыть</button>
+                    </div>
+                </div>
+            </form>
+
+            {% if search_was_submitted %}
+                <h3>Результаты поиска</h3>
+
+                {% if search_results %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>№ акта</th>
+                                <th>Дата</th>
+                                <th>Контейнер</th>
+                                <th>Машина</th>
+                                <th>Кем создан</th>
+                                <th>Открыть</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in search_results %}
+                                <tr>
+                                    <td>{{ receipt.daily_number }}</td>
+                                    <td>{{ receipt.receipt_date|date:"d.m.Y" }}</td>
+                                    <td>{{ receipt.container.number }}</td>
+                                    <td>{{ receipt.vehicle_number }}</td>
+                                    <td>{{ receipt.created_by }}</td>
+                                    <td>
+                                        <a class="btn" href="{% url 'container_receipt_detail' receipt.id %}">
+                                            Открыть
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>По выбранным условиям приемки не найдены.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function openSearchModal() {
+            const modal = document.getElementById("searchModal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeSearchModal() {
+            const modal = document.getElementById("searchModal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function openCreateBlock() {
+            const block = document.getElementById("createBlock");
+            if (block) {
+                block.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+
+        const containerInput = document.getElementById("id_container_number");
+        if (containerInput) {
+            containerInput.addEventListener("input", function () {
+                this.value = this.value.toUpperCase();
+            });
+        }
+
+        const vehicleInput = document.getElementById("id_vehicle_number");
+        if (vehicleInput) {
+            vehicleInput.addEventListener("input", function () {
+                this.value = this.value.toUpperCase();
+            });
+        }
+    </script>
+</body>
+</html>

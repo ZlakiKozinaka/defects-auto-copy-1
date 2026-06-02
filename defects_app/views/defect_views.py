@@ -20,6 +20,8 @@ from defects_app.models import (
     StatusAvto,
     PlanovyeVin,
     Modeli,
+    ContainerCar,
+    ContainerReceipt,
 )
 
 from defects_app.selectors import (
@@ -31,6 +33,7 @@ from defects_app.selectors import (
     get_unfixed_defects_for_car,
     get_sgp_problem_defects_for_car,
     get_status_history_for_car,
+    get_latest_container_receipts,
 )
 
 from defects_app.forms import (
@@ -564,6 +567,26 @@ def okline_view(request):
 
 
 @station_session_required
+def print_bestenevaya_defects_view(request, car_id):
+    if not (
+        has_permission(request.user, "cars.create_print")
+        or has_permission(request.user, "defects.create")
+    ):
+        return HttpResponseForbidden("У вас нет прав печатать дефекты Бестеневой.")
+
+    car = get_object_or_404(Avtomobili, id=car_id)
+    defects = get_defects_for_car(car).order_by("data", "id")
+    printed_by = request.user.get_full_name() or request.user.username
+
+    return render(request, "defects_app/print_bestenevaya_defects.html", {
+        "car": car,
+        "defects": defects,
+        "printed_at": timezone.now(),
+        "printed_by": printed_by,
+    })
+
+
+@station_session_required
 def complete_bestenevaya(request, car_id):
     station_id = request.station_context["station_id"]
 
@@ -652,6 +675,9 @@ def vh1_view(request):
     car = None
     defects = []
 
+    latest_receipts = get_latest_container_receipts()    
+    container_car_link = None
+
     car_id = request.GET.get("car_id")
     if car_id:
         car = get_object_or_404(Avtomobili, id=car_id)
@@ -660,6 +686,12 @@ def vh1_view(request):
             "model": car.model
         })
         defects = get_defects_for_car(car)
+        container_car_link = ContainerCar.objects.filter(
+            avto=car
+        ).select_related(
+            "receipt",
+            "receipt__container"
+        ).order_by("-accepted_at").first()
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -685,6 +717,7 @@ def vh1_view(request):
                         "vin_prefixes": VIN_PREFIXES,
                         "is_manager": is_manager,
                         "from_page": "vh1",
+                        "latest_receipts": latest_receipts,
                     })
 
                 model_name = plan_vin.model.strip()
@@ -699,6 +732,40 @@ def vh1_view(request):
                 )
                 messages.success(request, "Машина найдена в плановых VIN и создана для ВХ1.")
                 return redirect(f"/vh1/?car_id={created_car.id}")
+            
+
+        elif action == "bind_container":
+            car_id_post = request.POST.get("car_id")
+            receipt_id = request.POST.get("receipt_id")
+
+            car = get_object_or_404(Avtomobili, id=car_id_post)
+            receipt = get_object_or_404(ContainerReceipt, id=receipt_id)
+
+            existing_link = ContainerCar.objects.filter(
+                receipt=receipt,
+                avto=car,
+            ).first()
+
+            if existing_link:
+                messages.info(request, "Эта машина уже привязана к выбранной приемке контейнера.")
+            else:
+                ContainerCar.objects.create(
+                    receipt=receipt,
+                    avto=car,
+                    accepted_by=request.user.username,
+                )
+                messages.success(request, "Машина привязана к приемке контейнера и принята на ВХ1.")
+
+            return redirect(f"/vh1/?car_id={car.id}")
+    linked_receipt = None
+
+    if car:
+        linked_container_car = ContainerCar.objects.filter(
+            avto=car
+        ).select_related("receipt").first()
+
+        if linked_container_car:
+            linked_receipt = linked_container_car.receipt
 
     return render(request, "defects_app/quality.html", {
         "form": form,
@@ -707,6 +774,9 @@ def vh1_view(request):
         "vin_prefixes": VIN_PREFIXES,
         "is_manager": is_manager,
         "from_page": "vh1",
+        "latest_receipts": latest_receipts,
+        "container_car_link": container_car_link,
+        "linked_receipt": linked_receipt,
     })
 
 

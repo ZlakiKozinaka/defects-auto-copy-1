@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Акт приемки контейнера</title>
+
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 14px;
+            color: black;
+        }
+
+        .page {
+            width: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 42px;
+            color: #4e73a7;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .act-number {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .line-row {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .line {
+            display: inline-block;
+            border-bottom: 1px solid black;
+            min-width: 200px;
+            padding: 0 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 6px;
+            vertical-align: top;
+            font-size: 12px;
+        }
+
+        th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .signature-block {
+            margin-top: 60px;
+        }
+
+        .signature-line {
+            display: inline-block;
+            width: 300px;
+            border-bottom: 1px solid black;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .print-controls {
+            margin-bottom: 20px;
+        }
+
+        .print-btn {
+            padding: 10px 18px;
+            font-size: 15px;
+            border: none;
+            background: #b9a7cc;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media print {
+            .print-controls {
+                display: none;
+            }
+
+            body {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="print-controls">
+        <button onclick="window.print()" class="print-btn">
+            Печать
+        </button>
+    </div>
+
+    <div class="page">
+
+        <div class="logo">
+            ДФ “Трейдинг”
+        </div>
+
+        <div class="title">
+            Акт приемки
+        </div>
+
+        <div class="subtitle">
+            комплектующих в транспортной упаковке
+        </div>
+
+        <div class="act-number">
+            № {{ receipt.daily_number }}
+        </div>
+
+        <div class="line-row">
+            Дата поступления
+            <span class="line">
+                {{ receipt.receipt_date|date:"d.m.Y" }}
+            </span>
+
+            Номер контейнера
+            <span class="line" style="min-width: 180px;">
+                {{ receipt.container.number }}
+            </span>
+
+            Номер машины
+            <span class="line" style="min-width: 180px;">
+                {{ receipt.vehicle_number }}
+            </span>
+        </div>
+
+        <div class="line-row">
+            Номер пломбы
+            <span class="line" style="min-width: 600px;">
+                {% for seal in receipt.seals.all %}
+                    {{ seal.seal_number }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </span>
+        </div>
+
+        <div class="line-row">
+            Наименование комплектующих изделий
+            <span class="line" style="min-width: 400px;">
+                {{ receipt.components_name }}
+            </span>
+        </div>
+
+        <div class="line-row">
+            Номер партии
+            <span class="line" style="min-width: 550px;">
+                {{ receipt.batch_number }}
+            </span>
+        </div>
+
+        <div class="line-row">
+            Номер упаковки (количество мест)
+            <span class="line" style="min-width: 430px;">
+                {{ receipt.package_number }}
+            </span>
+        </div>
+
+        <div class="line-row">
+            Маркировка упаковочной тары комплектующих изделий
+            <span class="line" style="min-width: 320px;">
+                {{ receipt.package_marking }}
+            </span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40px;">№ п/п</th>
+                    <th style="width: 140px;">VIN</th>
+                    <th>Наименование комплектующих изделий</th>
+                    <th style="width: 110px;">Цвет кузова</th>
+                    <th style="width: 110px;">Цвет салона</th>
+                    <th style="width: 260px;">Описание дефектов</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td style="text-align:center;">
+                            {{ row.number }}
+                        </td>
+
+                        <td>
+                            {{ row.car.vin }}
+                        </td>
+
+                        <td>
+                            {% if row.plan_vin %}
+                                {{ row.plan_vin.komplektaciya }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if row.plan_vin %}
+                                {{ row.plan_vin.cvet_kuzova }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if row.plan_vin %}
+                                {{ row.plan_vin.cvet_salona }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if row.defect_descriptions %}
+                                {{ row.defect_descriptions }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+        <div class="signature-block">
+            Представитель ОТК
+            <span class="signature-line"></span>
+
+            Подпись, дата
+
+            <span class="signature-line" style="width: 180px;"></span>
+
+            Фамилия И. О.
+        </div>
+
+    </div>
+
+</body>
+</html>

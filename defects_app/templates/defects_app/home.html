@@ -159,12 +159,14 @@
             min-width: 500px;
         }
 
-        .bestenevaya-complete-form {
+        .bestenevaya-actions {
             display: flex;
             align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .bestenevaya-complete-form .btn {
+        .bestenevaya-actions .btn {
             white-space: nowrap;
         }
 
@@ -417,14 +419,20 @@
                     <div class="vin-boxes" id="vin-boxes"></div>
                 </div>
 
-                {% if request.session.station_id == 1 and car and not car.proshla_bestenevaya %}
-                    <div class="bestenevaya-complete-form">
-                        <form method="post" action="{% url 'complete_bestenevaya' car.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn">
-                                Машина прошла станцию Бестеневую
-                            </button>
-                        </form>
+                {% if request.session.station_id == 1 and car %}
+                    <div class="bestenevaya-actions">
+                        {% if not car.proshla_bestenevaya %}
+                            <form method="post" action="{% url 'complete_bestenevaya' car.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn">
+                                    Машина прошла станцию Бестеневую
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <a href="{% url 'print_bestenevaya_defects' car.id %}" class="btn" target="_blank">
+                            Распечатать дефекты
+                        </a>
                     </div>
                 {% endif %}
             </div>

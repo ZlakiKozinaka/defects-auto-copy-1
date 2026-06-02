@@ -76,6 +76,15 @@
 
         .btn:hover {
             background: #a48fbc;
+            color: black;
+            text-decoration: none;
+        }
+
+        .small-btn {
+            padding: 7px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            min-height: 34px;
         }
 
         .btn-link {
@@ -99,6 +108,9 @@
         }
 
         .disabled-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background: #d7d7d7;
             color: #666;
             border: none;
@@ -106,6 +118,12 @@
             font-size: 16px;
             border-radius: 8px;
             cursor: not-allowed;
+        }
+
+        .disabled-btn.small-btn {
+            padding: 7px 12px;
+            font-size: 14px;
+            min-height: 34px;
         }
 
         .message {
@@ -158,18 +176,88 @@
             font-weight: bold;
         }
 
+        .vh1-container-block {
+            margin-top: 15px;
+            padding: 16px;
+        }
+
+        .vh1-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .vh1-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .vh1-description {
+            margin: 8px 0 12px 0;
+            font-size: 16px;
+        }
+
+        .vh1-photo-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .file-button-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 7px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            min-height: 34px;
+        }
+
+        .file-button-label:hover {
+            background: #a48fbc;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        .file-name-text {
+            font-size: 14px;
+            color: #444;
+            min-width: 120px;
+        }
+
+        .vh1-linked-info {
+            background: #f3f0f7;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 12px;
             background: white;
         }
 
         th, td {
             border: 1px solid #ccc;
-            padding: 10px;
+            padding: 8px 10px;
             text-align: left;
             font-size: 14px;
+            vertical-align: middle;
         }
 
         th {
@@ -208,6 +296,11 @@
             Смена: {{ request.session.shift_name }}
             {% if is_manager %}
                 <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
+            {% endif %}
+            {% if from_page == "vh1" %}
+                <a href="{% url 'container_receipts' %}" class="btn" style="margin-left: 15px;">
+                    Приемка контейнеров
+                </a>
             {% endif %}
 
             <form method="post" action="/accounts/logout/" style="display: inline;">
@@ -260,6 +353,126 @@
             {% if car %}
                 <div class="car-info">
                     Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
+
+                    {% if container_car_link %}
+                        <a href="{% url 'container_receipt_detail' container_car_link.receipt.id %}"
+                        class="btn small-btn"
+                        style="margin-left: 15px;">
+                            Открыть контейнер
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if from_page == "vh1" and car %}
+                <div class="block vh1-container-block">
+                    <div class="vh1-header-row">
+                        <h3 class="vh1-title">Привязка машины к приемке контейнера</h3>
+
+                        {% if container_car_link %}
+                            <form method="post"
+                                  action="{% url 'upload_container_car_photos' container_car_link.id %}"
+                                  enctype="multipart/form-data"
+                                  class="vh1-photo-form">
+                                {% csrf_token %}
+
+                                <input id="vh1CarPhotos"
+                                    type="file"
+                                    name="photos"
+                                    multiple
+                                    accept="image/jpeg,image/png,image/webp"
+                                    class="file-input-hidden"
+                                    onchange="this.form.submit()">
+
+                                <label for="vh1CarPhotos" class="btn small-btn">
+                                    Загрузить фото приемки кузова
+                                </label>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if container_car_link %}
+                        <div class="vh1-linked-info">
+                            Машина уже привязана к приемке контейнера:
+                            <strong>акт №{{ container_car_link.receipt.daily_number }}</strong>,
+                            контейнер <strong>{{ container_car_link.receipt.container.number }}</strong>,
+                            дата <strong>{{ container_car_link.receipt.receipt_date|date:"d.m.Y" }}</strong>.
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>№ акта</th>
+                                    <th>Дата</th>
+                                    <th>Контейнер</th>
+                                    <th>Машина доставки</th>
+                                    <th>Кем создано</th>
+                                    <th>Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ container_car_link.receipt.daily_number }}</td>
+                                    <td>{{ container_car_link.receipt.receipt_date|date:"d.m.Y" }}</td>
+                                    <td>{{ container_car_link.receipt.container.number }}</td>
+                                    <td>{{ container_car_link.receipt.vehicle_number }}</td>
+                                    <td>{{ container_car_link.receipt.created_by }}</td>
+                                    <td>
+                                        <button type="button" class="disabled-btn small-btn">
+                                            Машина уже привязана
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="vh1-description">
+                            Выберите приемку контейнера, в которой находится эта машина, и нажмите кнопку привязки.
+                        </p>
+
+                        {% if latest_receipts %}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>№ акта</th>
+                                        <th>Дата</th>
+                                        <th>Контейнер</th>
+                                        <th>Машина доставки</th>
+                                        <th>Кем создано</th>
+                                        <th>Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for receipt in latest_receipts %}
+                                        <tr>
+                                            <td>{{ receipt.daily_number }}</td>
+                                            <td>{{ receipt.receipt_date|date:"d.m.Y" }}</td>
+                                            <td>{{ receipt.container.number }}</td>
+                                            <td>{{ receipt.vehicle_number }}</td>
+                                            <td>{{ receipt.created_by }}</td>
+                                            <td>
+                                                <form method="post" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="bind_container">
+                                                    <input type="hidden" name="car_id" value="{{ car.id }}">
+                                                    <input type="hidden" name="receipt_id" value="{{ receipt.id }}">
+
+                                                    <button type="submit" class="btn small-btn">
+                                                        Эта машина в этом контейнере
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>Нет созданных приемок контейнеров. Сначала создайте приемку контейнера.</p>
+                            <a href="{% url 'container_receipts' %}" class="btn">
+                                Перейти к приемке контейнеров
+                            </a>
+                        {% endif %}
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
@@ -340,6 +553,26 @@
 
         function clearForm() {
             window.location.href = window.location.pathname;
+        }
+
+        function updateFileNameText(input) {
+            const text = document.getElementById("fileNameText");
+
+            if (!text || !input) {
+                return;
+            }
+
+            if (!input.files || input.files.length === 0) {
+                text.textContent = "Файл не выбран";
+                return;
+            }
+
+            if (input.files.length === 1) {
+                text.textContent = input.files[0].name;
+                return;
+            }
+
+            text.textContent = "Выбрано файлов: " + input.files.length;
         }
 
         const defectRows = document.querySelectorAll(".table-row-clickable");

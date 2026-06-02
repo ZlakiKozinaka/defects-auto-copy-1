@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <link rel="icon" type="image/webp" href="{% static 'icons/icon_defects.webp' %}">
+    <meta charset="UTF-8">
+    <title>Акт приемки контейнера</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f3f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #b9a7cc;
+            padding: 25px;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 95%;
+            margin: 20px auto;
+        }
+
+        .block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #b9a7cc;
+            color: black;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #a48fbc;
+            color: black;
+            text-decoration: none;
+        }
+
+        .disabled-btn {
+            background: #d7d7d7;
+            color: #666;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: not-allowed;
+        }
+
+        .sub-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 25px;
+        }
+
+        .info-item {
+            background: #f3f0f7;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 17px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .photos {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .photo-card {
+            background: #f3f0f7;
+            padding: 10px;
+            border-radius: 10px;
+            width: 260px;
+        }
+
+        .photo-card img {
+            width: 100%;
+            max-height: 190px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .photo-meta {
+            font-size: 13px;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .empty-text {
+            color: #555;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e9e1f1;
+        }
+
+        @media (max-width: 1000px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        АКТ ПРИЕМКИ КОНТЕЙНЕРА
+
+        <div style="font-size: 16px; margin-top: 10px;">
+            Пользователь: {{ request.user.username }}
+
+            <a href="{% url 'container_receipts' %}" class="btn" style="margin-left: 15px;">
+                Назад к приемкам
+            </a>
+
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="margin-left: 15px;">Выйти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <div class="block">
+            <div class="sub-title">
+                Акт №{{ receipt.daily_number }} от {{ receipt.receipt_date|date:"d.m.Y" }}
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Дата поступления</div>
+                    {{ receipt.receipt_date|date:"d.m.Y" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Номер контейнера</div>
+                    {{ receipt.container.number }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Номер машины</div>
+                    {{ receipt.vehicle_number }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Номер пломбы</div>
+                    {% for seal in receipt.seals.all %}
+                        {{ seal.seal_number }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        —
+                    {% endfor %}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Наименование комплектующих изделий</div>
+                    {{ receipt.components_name|default:"—" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Номер партии</div>
+                    {{ receipt.batch_number|default:"—" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Номер упаковки / количество мест</div>
+                    {{ receipt.package_number|default:"—" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Маркировка упаковочной тары</div>
+                    {{ receipt.package_marking|default:"—" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Кем создано</div>
+                    {{ receipt.created_by|default:"—" }}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Когда создано</div>
+                    {{ receipt.created_at|date:"d.m.Y H:i:s" }}
+                </div>
+            </div>
+        </div>
+
+        <div class="block">
+            <div class="sub-title">Фото контейнера</div>
+
+            {% if receipt.photos.all %}
+                <div class="photos">
+                    {% for photo in receipt.photos.all %}
+                        <div class="photo-card">
+                            <a href="{{ photo.image.url }}" target="_blank">
+                                <img src="{{ photo.image.url }}" alt="Фото контейнера">
+                            </a>
+
+                            <div class="photo-meta">
+                                {{ photo.original_name|default:"Фото" }}<br>
+                                {{ photo.uploaded_by|default:"" }}
+                                {% if photo.uploaded_at %}
+                                    | {{ photo.uploaded_at|date:"d.m.Y H:i:s" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">Фото контейнера пока не добавлены.</p>
+            {% endif %}
+        </div>
+
+        <div class="block">
+            <div class="sub-title">Кузова в контейнере</div>
+
+            {% if rows %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>№ п/п</th>
+                            <th>VIN</th>
+                            <th>Модель</th>
+                            <th>Комплектация</th>
+                            <th>Цвет кузова</th>
+                            <th>Цвет салона</th>
+                            <th>Фото приемки</th>
+                            <th>Дефекты</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+
+                                <td>
+                                    <strong>{{ row.car.vin }}</strong>
+
+                                    <div style="margin-top: 8px;">
+                                        <a href="/vh1/?car_id={{ row.car.id }}"
+                                        class="btn small-btn">
+                                            Открыть ВХ1
+                                        </a>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {{ row.car.model }}
+                                </td>
+
+                                <td>
+                                    {% if row.plan_vin %}
+                                        {{ row.plan_vin.komplektaciya }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.plan_vin %}
+                                        {{ row.plan_vin.cvet_kuzova }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.plan_vin %}
+                                        {{ row.plan_vin.cvet_salona }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.photos %}
+                                        {{ row.photos|length }} фото
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.defects_count > 0 %}
+                                        {{ row.defect_descriptions }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-text">
+                    Кузова пока не привязаны к этой приемке.
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="block">
+            <div class="sub-title">Фото приемки кузовов</div>
+
+            {% if rows %}
+                {% for row in rows %}
+                    <div style="margin-bottom: 25px;">
+                        <h3>{{ row.car.vin }}</h3>
+
+                        {% if row.photos %}
+                            <div class="photos">
+                                {% for photo in row.photos %}
+                                    <div class="photo-card">
+                                        <a href="{{ photo.image.url }}" target="_blank">
+                                            <img src="{{ photo.image.url }}" alt="Фото приемки кузова">
+                                        </a>
+
+                                        <div class="photo-meta">
+                                            {{ photo.original_name|default:"Фото" }}<br>
+                                            {{ photo.uploaded_by|default:"" }}
+                                            {% if photo.uploaded_at %}
+                                                | {{ photo.uploaded_at|date:"d.m.Y H:i:s" }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="empty-text">Фото приемки кузова пока не добавлены.</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">Кузова пока не привязаны.</p>
+            {% endif %}
+        </div>
+
+        <div class="block">
+            {% if rows %}
+                <a href="{% url 'print_container_receipt' receipt.id %}" class="btn" target="_blank">
+                    Распечатать акт
+                </a>
+            {% else %}
+                <button type="button" class="disabled-btn">
+                    Распечатать акт
+                </button>
+                <span style="margin-left: 10px;">
+                    Сначала привяжите хотя бы один кузов к приемке.
+                </span>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+</html>
