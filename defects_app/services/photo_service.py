@@ -7,7 +7,11 @@ from PIL import Image, ImageOps
 from django.core.files.base import ContentFile
 from django.contrib import messages
 
-from defects_app.models import DefectPhoto
+from defects_app.models import (
+    DefectPhoto,
+    ContainerReceiptPhoto,
+    ContainerCarPhoto,
+)
 
 
 def save_defect_photos(defect, request):
@@ -53,4 +57,96 @@ def save_defect_photos(defect, request):
             messages.error(
                 request,
                 f"Не удалось обработать фото: {uploaded_file.name}. Ошибка: {e}"
+            )
+
+
+def save_container_receipt_photos(receipt, request):
+    photos = request.FILES.getlist("photos")
+
+    for uploaded_file in photos:
+        try:
+            image = Image.open(uploaded_file)
+            image = ImageOps.exif_transpose(image)
+
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+
+            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+
+            buffer = BytesIO()
+
+            image.save(
+                buffer,
+                format="WEBP",
+                quality=70,
+                method=6,
+            )
+
+            file_name = f"{uuid.uuid4().hex}.webp"
+
+            photo = ContainerReceiptPhoto(
+                receipt=receipt,
+                original_name=uploaded_file.name,
+                uploaded_by=request.user.username,
+            )
+
+            photo.image.save(
+                file_name,
+                ContentFile(buffer.getvalue()),
+                save=True,
+            )
+
+            photo.file_size = photo.image.size
+
+            photo.save(update_fields=["file_size"])
+
+        except Exception as e:
+            messages.error(
+                request,
+                f"Не удалось обработать фото контейнера: {uploaded_file.name}. Ошибка: {e}"
+            )
+
+def save_container_car_photos(container_car, request):
+    photos = request.FILES.getlist("photos")
+
+    for uploaded_file in photos:
+        try:
+            image = Image.open(uploaded_file)
+            image = ImageOps.exif_transpose(image)
+
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+
+            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+
+            buffer = BytesIO()
+
+            image.save(
+                buffer,
+                format="WEBP",
+                quality=70,
+                method=6,
+            )
+
+            file_name = f"{uuid.uuid4().hex}.webp"
+
+            photo = ContainerCarPhoto(
+                container_car=container_car,
+                original_name=uploaded_file.name,
+                uploaded_by=request.user.username,
+            )
+
+            photo.image.save(
+                file_name,
+                ContentFile(buffer.getvalue()),
+                save=True,
+            )
+
+            photo.file_size = photo.image.size
+            photo.save(update_fields=["file_size"])
+
+        except Exception as e:
+            messages.error(
+                request,
+                f"Не удалось обработать фото машины: {uploaded_file.name}. Ошибка: {e}"
             )
