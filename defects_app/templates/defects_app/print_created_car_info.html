@@ -93,6 +93,7 @@
             <table>
                 <tbody>
                     <tr><th>VIN номер</th><td>{{ plan_vin.vin }}</td></tr>
+                    <tr><th>Sequence номер</th><td>{{ car.station1_sequence_number|default:"—" }}</td></tr>
                     <tr><th>Модель</th><td>{{ plan_vin.model }}</td></tr>
                     <tr><th>Цвет кузова</th><td>{{ plan_vin.cvet_kuzova }}</td></tr>
                     <tr><th>Цвет салона</th><td>{{ plan_vin.cvet_salona }}</td></tr>

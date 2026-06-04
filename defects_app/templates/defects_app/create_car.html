@@ -235,7 +235,7 @@
                 <a href="/manager/" class="btn" style="margin-left: 15px;">Панель начальника</a>
             {% endif %}
 
-            <span class="counter-bubble">В буфере 6-листника: {{ important_sheet_count }}/6</span>
+            <span class="counter-bubble">В общем буфере 6-листника: {{ important_sheet_count }}/6</span>
 
             <form method="post" action="/accounts/logout/" style="display: inline;">
                 {% csrf_token %}
@@ -290,7 +290,7 @@
 
             {% if car %}
                 <div class="car-info">
-                    Текущая машина: {{ car.vin }} | Модель: {{ car.model }}
+                    Текущая машина: {{ car.vin }} | Sequence: {{ car.station1_sequence_number|default:"—" }} | Модель: {{ car.model }}
                 </div>
             {% endif %}
         </div>
@@ -309,6 +309,7 @@
                     <thead>
                         <tr>
                             <th>VIN</th>
+                            <th>Sequence</th>
                             <th>Кто создал</th>
                             <th>Когда</th>
                             <th>Цвет кузова</th>
@@ -320,6 +321,7 @@
                         {% for item in last_created_cars %}
                             <tr>
                                 <td>{{ item.car.vin }}</td>
+                                <td>{{ item.car.station1_sequence_number|default:"—" }}</td>
                                 <td>{{ item.car.kto_sozdal|default:"" }}</td>
                                 <td>{{ item.car.data_sozdaniya|date:"d.m.Y H:i:s" }}</td>
                                 <td>{% if item.plan %}{{ item.plan.cvet_kuzova }}{% endif %}</td>
@@ -379,6 +381,7 @@
 
                 <div class="result-box">
                     <p><strong>VIN:</strong> {{ search_result_car.vin }}</p>
+                    <p><strong>Sequence:</strong> {{ search_result_car.station1_sequence_number|default:"—" }}</p>
                     <p><strong>Кто создал:</strong> {{ search_result_car.kto_sozdal|default:"" }}</p>
                     <p><strong>Дата создания:</strong> {{ search_result_car.data_sozdaniya|date:"d.m.Y H:i:s" }}</p>
 

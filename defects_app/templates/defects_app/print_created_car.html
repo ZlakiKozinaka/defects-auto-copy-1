@@ -136,7 +136,7 @@
     </div>
 
     <div class="page">
-        <div class="vin-title">VIN: {{ car.vin }}</div>
+        <div class="vin-title">VIN: {{ car.vin }}{% if car.station1_sequence_number %} | Sequence: {{ car.station1_sequence_number }}{% endif %}</div>
 
         <table>
             <thead>
@@ -169,7 +169,7 @@
     </div>
 
     <div class="page">
-        <div class="vin-title">VIN: {{ car.vin }}</div>
+        <div class="vin-title">VIN: {{ car.vin }}{% if car.station1_sequence_number %} | Sequence: {{ car.station1_sequence_number }}{% endif %}</div>
 
         <table>
             <thead>
@@ -198,6 +198,10 @@
                     <tr>
                         <th>VIN номер</th>
                         <td>{{ plan_vin.vin }}</td>
+                    </tr>
+                    <tr>
+                        <th>Sequence номер</th>
+                        <td>{{ car.station1_sequence_number|default:"—" }}</td>
                     </tr>
                     <tr>
                         <th>Модель</th>

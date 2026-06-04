@@ -105,6 +105,7 @@
 
                     <td class="info-col">
                         <div class="vin">{{ row.car.vin }}</div>
+                        <div><strong>Sequence:</strong> {{ row.car.station1_sequence_number|default:"—" }}</div>
 
                         {% if row.plan_vin %}
                             <div><strong>Модель:</strong> {{ row.plan_vin.model }}</div>
