@@ -15,6 +15,24 @@ admin.site.register(Avtomobili)
 admin.site.register(PlanovyeVin)
 admin.site.register(DefectPhoto)
 
+@admin.register(StationOnePrintBufferEntry)
+class StationOnePrintBufferEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "car",
+        "added_at",
+        "printed_at",
+    )
+    search_fields = (
+        "car__vin",
+        "car__station1_sequence_number",
+    )
+    list_filter = (
+        "printed_at",
+        "added_at",
+    )
+    ordering = ("-added_at",)
+
 @admin.register(DailyProductionPlan)
 class DailyProductionPlanAdmin(admin.ModelAdmin):
     list_display = (

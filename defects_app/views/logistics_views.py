@@ -18,14 +18,26 @@ from defects_app.permissions import (
 )
 from defects_app.models import Avtomobili, PlanovyeVin, Modeli
 from defects_app.forms import CarSearchForm, VIN_PREFIXES
+from defects_app.services.station1_buffer_service import (
+    add_car_to_station_one_buffer,
+    assign_station_one_sequence_number,
+    get_station_one_buffer_count,
+)
 from defects_app.session_utils import require_station_session
+
+def get_created_car_print_url(car_id, batch_car_ids=None):
+    url = reverse("print_created_car", kwargs={"car_id": car_id})
+    if batch_car_ids:
+        url += "?" + urlencode({
+            "important_car_ids": ",".join(str(batch_car_id) for batch_car_id in batch_car_ids)
+        })
+    return url
+
 
 @permission_required("cars.create_print")
 @station_session_required
 def create_car_view(request):
     is_manager = is_manager_user(request.user)
-    station_id = request.station_context["station_id"]
-
     form = CarSearchForm()
     search_form = CarSearchForm()
 
@@ -37,7 +49,7 @@ def create_car_view(request):
 
     last_created_cars_raw = Avtomobili.objects.order_by("-data_sozdaniya")[:10]
 
-    important_sheet_count = len(request.session.get("important_sheet_car_ids", []))
+    important_sheet_count = get_station_one_buffer_count()
 
     last_created_cars = []
     for created_car in last_created_cars_raw:
@@ -117,9 +129,11 @@ def create_car_view(request):
                         "kto_sozdal",
                         "data_sozdaniya",
                     ])
+                    assign_station_one_sequence_number(existing_car)
+                    batch_car_ids = add_car_to_station_one_buffer(existing_car)
 
                     messages.success(request, "Машина успешно создана на станции 1.")
-                    return redirect("print_created_car", car_id=existing_car.id)
+                    return redirect(get_created_car_print_url(existing_car.id, batch_car_ids))
 
                 messages.info(request, "Машина с таким VIN уже существует.")
                 return redirect(f"/create-car/?car_id={existing_car.id}")
@@ -136,9 +150,11 @@ def create_car_view(request):
                 kto_sozdal=request.user.username,
                 data_sozdaniya=timezone.now(),
             )
+            assign_station_one_sequence_number(car)
+            batch_car_ids = add_car_to_station_one_buffer(car)
 
             messages.success(request, "Новая машина успешно создана.")
-            return redirect("print_created_car", car_id=car.id)
+            return redirect(get_created_car_print_url(car.id, batch_car_ids))
 
     car_id = request.GET.get("car_id")
     if car_id:
@@ -199,21 +215,16 @@ def print_created_car_view(request, car_id):
     ]
 
     important_print_url = None
-    if session_data.get("station_id") in [1, 12, 999]:
-        buffer_key = "important_sheet_car_ids"
-        car_ids_buffer = request.session.get(buffer_key, [])
-        if car.id not in car_ids_buffer:
-            car_ids_buffer.append(car.id)
-
-        if len(car_ids_buffer) >= 6:
-            request.session[buffer_key] = []
-            important_print_url = reverse("print_created_car_info_batch") + "?" + urlencode({
-                "car_ids": ",".join(str(buffer_car_id) for buffer_car_id in car_ids_buffer[:6])
-            })
-        else:
-            request.session[buffer_key] = car_ids_buffer
-
-        request.session.modified = True
+    important_car_ids_raw = request.GET.get("important_car_ids", "")
+    important_car_ids = [
+        car_id.strip()
+        for car_id in important_car_ids_raw.split(",")
+        if car_id.strip().isdigit()
+    ][:6]
+    if important_car_ids:
+        important_print_url = reverse("print_created_car_info_batch") + "?" + urlencode({
+            "car_ids": ",".join(important_car_ids)
+        })
 
     return render(request, "defects_app/print_created_car.html", {
         "car": car,

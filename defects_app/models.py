@@ -98,6 +98,7 @@ class Avtomobili(models.Model):
     model = models.ForeignKey(Modeli, on_delete=models.PROTECT, verbose_name="Модель")
     data_sozdaniya = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
     created_on_station_1 = models.BooleanField(default=True, verbose_name="Создана на станции 1")
+    station1_sequence_number = models.CharField(max_length=11, unique=True, blank=True, null=True, verbose_name="Sequence номер станции 1")
     kto_sozdal = models.CharField(max_length=150, blank=True, null=True, verbose_name="Кто создал машину")
     proshla_bestenevaya = models.BooleanField(default=False, verbose_name="Прошла Бестеневую")
     data_prohoda_bestenevaya = models.DateTimeField(blank=True, null=True, verbose_name="Дата прохода Бестеневой")
@@ -128,6 +129,25 @@ class Avtomobili(models.Model):
     def __str__(self):
         return self.vin
 
+
+
+class StationOnePrintBufferEntry(models.Model):
+    car = models.OneToOneField(
+        Avtomobili,
+        on_delete=models.CASCADE,
+        related_name="station1_print_buffer_entry",
+        verbose_name="Автомобиль",
+    )
+    added_at = models.DateTimeField(default=timezone.now, verbose_name="Когда добавлена в буфер")
+    printed_at = models.DateTimeField(blank=True, null=True, verbose_name="Когда отправлена в 6-листник")
+
+    class Meta:
+        verbose_name = "Запись буфера станции 1"
+        verbose_name_plural = "Буфер станции 1"
+        ordering = ["added_at", "id"]
+
+    def __str__(self):
+        return f"{self.car.vin} — {self.added_at:%d.%m.%Y %H:%M:%S}"
 
 class Defekty(models.Model):
     avto = models.ForeignKey(Avtomobili, on_delete=models.CASCADE, verbose_name="Автомобиль")

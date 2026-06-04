@@ -39,6 +39,7 @@ from defects_app.models import (
     DailyProductionPlan,
     Otvetstvennye,
     DefectApprovalForSgp,
+    VinPrefix,
     Modeli,
     Tipy,
     Oblasti,
