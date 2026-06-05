@@ -1,6 +1,9 @@
+import uuid
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
@@ -41,38 +44,66 @@ def container_receipts_view(request):
             form = ContainerReceiptForm(request.POST, request.FILES)
 
             if form.is_valid():
+                submission_token = request.POST.get("submission_token") or uuid.uuid4().hex
+                existing_receipt = ContainerReceipt.objects.filter(
+                    submission_token=submission_token
+                ).first()
+
+                if existing_receipt:
+                    messages.info(
+                        request,
+                        f"Эта приемка уже сохраняется или сохранена. Акт №{existing_receipt.daily_number}."
+                    )
+                    return redirect("container_receipt_detail", receipt_id=existing_receipt.id)
+                
                 container_number = form.cleaned_data["container_number"]
                 seals_text = form.cleaned_data.get("seals_text", "")
 
-                container, _ = Container.objects.get_or_create(
-                    number=container_number,
-                    defaults={"is_active": True}
-                )
+                try:
+                    with transaction.atomic():
+                        container, _ = Container.objects.get_or_create(
+                            number=container_number,
+                            defaults={"is_active": True}
+                        )
 
-                max_number = ContainerReceipt.objects.filter(
-                    receipt_date=today
-                ).aggregate(
-                    max_number=Max("daily_number")
-                )["max_number"] or 0
+                        max_number = ContainerReceipt.objects.filter(
+                            receipt_date=today
+                        ).aggregate(
+                            max_number=Max("daily_number")
+                        )["max_number"] or 0
 
-                receipt = form.save(commit=False)
-                receipt.container = container
-                receipt.receipt_date = today
-                receipt.daily_number = max_number + 1
-                receipt.created_by = request.user.username
-                receipt.save()
+                        receipt = form.save(commit=False)
+                        receipt.container = container
+                        receipt.receipt_date = today
+                        receipt.daily_number = max_number + 1
+                        receipt.created_by = request.user.username
+                        receipt.submission_token = submission_token
+                        receipt.save()
 
-                seals = [
-                    item.strip()
-                    for item in seals_text.replace(";", ",").split(",")
-                    if item.strip()
-                ]
+                        seals = [
+                            item.strip()
+                            for item in seals_text.replace(";", ",").split(",")
+                            if item.strip()
+                        ]
 
-                for seal in seals:
-                    ContainerSeal.objects.create(
-                        receipt=receipt,
-                        seal_number=seal
-                    )
+                        for seal in seals:
+                            ContainerSeal.objects.create(
+                                receipt=receipt,
+                                seal_number=seal
+                            )
+                except IntegrityError:
+                    existing_receipt = ContainerReceipt.objects.filter(
+                        submission_token=submission_token
+                    ).first()
+
+                    if existing_receipt:
+                        messages.info(
+                            request,
+                            f"Эта приемка уже сохраняется или сохранена. Акт №{existing_receipt.daily_number}."
+                        )
+                        return redirect("container_receipt_detail", receipt_id=existing_receipt.id)
+
+                    raise
 
                 save_container_receipt_photos(receipt, request)
 

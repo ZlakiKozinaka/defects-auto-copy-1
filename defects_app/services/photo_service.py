@@ -14,6 +14,11 @@ from defects_app.models import (
 )
 
 
+MAX_PHOTO_SIZE = (1280, 1280)
+WEBP_QUALITY = 70
+WEBP_METHOD = 4
+
+
 def save_defect_photos(defect, request):
     photos = request.FILES.getlist("photos")
 
@@ -25,14 +30,14 @@ def save_defect_photos(defect, request):
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+            image.thumbnail(MAX_PHOTO_SIZE, Image.Resampling.LANCZOS)
 
             buffer = BytesIO()
             image.save(
                 buffer,
                 format="WEBP",
-                quality=70,
-                method=6,
+                quality=WEBP_QUALITY,
+                method=WEBP_METHOD,
             )
 
             file_name = f"{uuid.uuid4().hex}.webp"
@@ -71,15 +76,15 @@ def save_container_receipt_photos(receipt, request):
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+            image.thumbnail(MAX_PHOTO_SIZE, Image.Resampling.LANCZOS)
 
             buffer = BytesIO()
 
             image.save(
                 buffer,
                 format="WEBP",
-                quality=70,
-                method=6,
+                quality=WEBP_QUALITY,
+                method=WEBP_METHOD,
             )
 
             file_name = f"{uuid.uuid4().hex}.webp"
@@ -117,15 +122,15 @@ def save_container_car_photos(container_car, request):
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+            image.thumbnail(MAX_PHOTO_SIZE, Image.Resampling.LANCZOS)
 
             buffer = BytesIO()
 
             image.save(
                 buffer,
                 format="WEBP",
-                quality=70,
-                method=6,
+                quality=WEBP_QUALITY,
+                method=WEBP_METHOD,
             )
 
             file_name = f"{uuid.uuid4().hex}.webp"

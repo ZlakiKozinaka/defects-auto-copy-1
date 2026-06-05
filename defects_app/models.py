@@ -498,6 +498,7 @@ class ContainerReceipt(models.Model):
     daily_number = models.PositiveIntegerField(verbose_name="Номер акта за день")
     receipt_date = models.DateField(verbose_name="Дата поступления")
     vehicle_number = models.CharField(max_length=20, verbose_name="Номер машины")
+    submission_token = models.CharField(max_length=64, unique=True, blank=True, null=True)
     container = models.ForeignKey(Container, on_delete=models.PROTECT, related_name="receipts")
     components_name = models.CharField(max_length=255, verbose_name="Наименование комплектующих изделий", blank=True)
     batch_number = models.CharField(max_length=100, verbose_name="Номер партии", blank=True)
