@@ -220,9 +220,13 @@
                 Номер акта сформируется автоматически за текущую дату
             </div>
 
-            <form method="post" enctype="multipart/form-data">
+            <form method="post"
+                action="{% url 'container_receipts' %}"
+                enctype="multipart/form-data"
+                id="containerReceiptForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="create">
+                <input type="hidden" name="submission_token" id="submissionToken">
 
                 <div class="row">
                     <div class="field">
@@ -281,12 +285,15 @@
                     <div class="field">
                         <label for="{{ form.photos.id_for_label }}">Фото контейнера</label>
                         {{ form.photos }}
+                        <small id="photoUploadStatus" style="margin-top: 8px; color: #555;">
+                            Фото с планшета будут автоматически уменьшены перед отправкой.
+                        </small>
                         {{ form.photos.errors }}
                     </div>
                 </div>
 
                 <div style="margin-top: 25px;">
-                    <button type="submit" class="btn">Сохранить приемку</button>
+                    <button type="submit" class="btn" id="saveReceiptButton">Сохранить приемку</button>
                 </div>
             </form>
         </div>
@@ -430,6 +437,184 @@
         if (vehicleInput) {
             vehicleInput.addEventListener("input", function () {
                 this.value = this.value.toUpperCase();
+            });
+        }
+
+        const receiptForm = document.getElementById("containerReceiptForm");
+        const photoInput = document.getElementById("id_photos");
+        const saveReceiptButton = document.getElementById("saveReceiptButton");
+        const photoUploadStatus = document.getElementById("photoUploadStatus");
+        const submissionToken = document.getElementById("submissionToken");
+        let compressedReceiptPhotos = null;
+        let submitIsRunning = false;
+
+        function buildSubmissionToken() {
+            if (window.crypto && window.crypto.randomUUID) {
+                return window.crypto.randomUUID();
+            }
+
+            return String(Date.now()) + "-" + Math.random().toString(16).slice(2);
+        }
+
+        if (submissionToken && !submissionToken.value) {
+            submissionToken.value = buildSubmissionToken();
+        }
+
+        function setPhotoStatus(text) {
+            if (photoUploadStatus) {
+                photoUploadStatus.textContent = text;
+            }
+        }
+
+        function resizeImageFile(file, maxSide, quality) {
+            return new Promise(function (resolve, reject) {
+                if (!file.type || !file.type.startsWith("image/")) {
+                    resolve(file);
+                    return;
+                }
+
+                const image = new Image();
+                const objectUrl = URL.createObjectURL(file);
+
+                image.onload = function () {
+                    URL.revokeObjectURL(objectUrl);
+
+                    const ratio = Math.min(1, maxSide / image.width, maxSide / image.height);
+                    const width = Math.max(1, Math.round(image.width * ratio));
+                    const height = Math.max(1, Math.round(image.height * ratio));
+                    const canvas = document.createElement("canvas");
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext("2d").drawImage(image, 0, 0, width, height);
+                    canvas.toBlob(function (blob) {
+                        if (!blob) {
+                            resolve(file);
+                            return;
+                        }
+
+                        const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+                        resolve(new File([blob], newName, {
+                            type: "image/jpeg",
+                            lastModified: Date.now()
+                        }));
+                    }, "image/jpeg", quality);
+                };
+
+                image.onerror = function () {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error("Не удалось подготовить фото " + file.name));
+                };
+
+                image.src = objectUrl;
+            });
+        }
+
+        async function prepareReceiptPhotos() {
+            if (!photoInput || !photoInput.files || photoInput.files.length === 0) {
+                compressedReceiptPhotos = [];
+                setPhotoStatus("Фото не выбраны.");
+                return compressedReceiptPhotos;
+            }
+
+            const files = Array.from(photoInput.files);
+            const prepared = [];
+
+            for (let index = 0; index < files.length; index += 1) {
+                setPhotoStatus("Подготовка фото " + (index + 1) + " из " + files.length + "...");
+                prepared.push(await resizeImageFile(files[index], 1280, 0.72));
+            }
+
+            compressedReceiptPhotos = prepared;
+            setPhotoStatus("Готово к отправке: " + prepared.length + " фото уменьшены.");
+            return compressedReceiptPhotos;
+        }
+
+        if (photoInput) {
+            photoInput.addEventListener("change", function () {
+                compressedReceiptPhotos = null;
+                if (this.files && this.files.length) {
+                    prepareReceiptPhotos().catch(function () {
+                        compressedReceiptPhotos = null;
+                        setPhotoStatus("Не удалось заранее уменьшить фото. Попробуем отправить оригиналы.");
+                    });
+                } else {
+                    setPhotoStatus("Фото с планшета будут автоматически уменьшены перед отправкой.");
+                }
+            });
+        }
+
+        function sendReceiptForm(formData) {
+            return new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'container_receipts' %}");
+
+                xhr.upload.onprogress = function (event) {
+                    if (event.lengthComputable) {
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        setPhotoStatus("Отправка приемки: " + percent + "%");
+                    } else {
+                        setPhotoStatus("Отправка приемки...");
+                    }
+                };
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        resolve({ url: xhr.responseURL || window.location.href, html: xhr.responseText });
+                    } else {
+                        reject(new Error("Ошибка сохранения: " + xhr.status));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    reject(new Error("Сеть прервала отправку. При повторной отправке дубль акта не создастся."));
+                };
+
+                xhr.send(formData);
+            });
+        }
+
+        if (receiptForm) {
+            receiptForm.addEventListener("submit", async function (event) {
+                if (submitIsRunning) {
+                    event.preventDefault();
+                    return;
+                }
+
+                submitIsRunning = true;
+                event.preventDefault();
+
+                if (saveReceiptButton) {
+                    saveReceiptButton.disabled = true;
+                    saveReceiptButton.textContent = "Сохраняем...";
+                }
+
+                try {
+                    const photos = compressedReceiptPhotos || await prepareReceiptPhotos();
+                    const formData = new FormData(receiptForm);
+                    formData.delete("photos");
+
+                    photos.forEach(function (file) {
+                        formData.append("photos", file, file.name);
+                    });
+
+                    setPhotoStatus("Отправка приемки...");
+                    const response = await sendReceiptForm(formData);
+                    if (response.url === window.location.href) {
+                        document.open();
+                        document.write(response.html);
+                        document.close();
+                    } else {
+                        window.location.href = response.url;
+                    }
+                } catch (error) {
+                    submitIsRunning = false;
+                    if (saveReceiptButton) {
+                        saveReceiptButton.disabled = false;
+                        saveReceiptButton.textContent = "Сохранить приемку";
+                    }
+                    setPhotoStatus(error.message || "Не удалось сохранить приемку. Попробуйте еще раз.");
+                }
             });
         }
     </script>
