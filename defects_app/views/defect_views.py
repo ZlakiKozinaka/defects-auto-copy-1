@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.db import IntegrityError
 
 from defects_app.models import SnpDefectOrder
 from defects_app.session_utils import require_station_session
@@ -723,14 +724,18 @@ def vh1_view(request):
                 model_name = plan_vin.model.strip()
                 model_obj, _ = Modeli.objects.get_or_create(nazvanie=model_name)
 
-                created_car = Avtomobili.objects.create(
-                    vin=vin,
-                    model=model_obj,
-                    kto_sozdal=request.user.username,
-                    data_sozdaniya=timezone.now(),
-                    created_on_station_1=False,
-                )
-                messages.success(request, "Машина найдена в плановых VIN и создана для ВХ1.")
+                try:
+                    created_car = Avtomobili.objects.create(
+                        vin=vin,
+                        model=model_obj,
+                        kto_sozdal=request.user.username,
+                        data_sozdaniya=timezone.now(),
+                        created_on_station_1=False,
+                    )
+                    messages.success(request, "Машина найдена в плановых VIN и создана для ВХ1.")
+                except IntegrityError:
+                    created_car = get_object_or_404(Avtomobili, vin=vin)
+                    messages.info(request, "Машина уже создана, открываем существующую карточку.")
                 return redirect(f"/vh1/?car_id={created_car.id}")
             
 
@@ -749,12 +754,15 @@ def vh1_view(request):
             if existing_link:
                 messages.info(request, "Эта машина уже привязана к выбранной приемке контейнера.")
             else:
-                ContainerCar.objects.create(
-                    receipt=receipt,
-                    avto=car,
-                    accepted_by=request.user.username,
-                )
-                messages.success(request, "Машина привязана к приемке контейнера и принята на ВХ1.")
+                try:
+                    ContainerCar.objects.create(
+                        receipt=receipt,
+                        avto=car,
+                        accepted_by=request.user.username,
+                    )
+                    messages.success(request, "Машина привязана к приемке контейнера и принята на ВХ1.")
+                except IntegrityError:
+                    messages.info(request, "Эта машина уже привязана к выбранной приемке контейнера.")
 
             return redirect(f"/vh1/?car_id={car.id}")
     linked_receipt = None

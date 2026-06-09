@@ -209,9 +209,10 @@ def print_created_car_view(request, car_id):
     aggregates = [
         "Телематика",
         "Глонасс",
-        "Батарея",
+        "ДВС",
         "Передний двигатель",
         "Задний двигатель",
+        "Батарея",
     ]
 
     important_print_url = None

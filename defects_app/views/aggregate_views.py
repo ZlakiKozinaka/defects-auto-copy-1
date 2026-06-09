@@ -15,6 +15,7 @@ from defects_app.forms import (
     CarSearchForm,
     TelematikaForm,
     GlonassForm,
+    DvsForm,
     BatareyaForm,
     PerednijDvigatelForm,
     ZadnijDvigatelForm,
@@ -387,11 +388,13 @@ def zadnij_dvigatel_view(request):
 @station_session_required
 def agregaty_view(request):
     is_manager = is_manager_user(request.user)
+    can_edit_aggregate_fields = can_edit_aggregates(request.user)
     station_id = request.station_context["station_id"]
 
     form = CarSearchForm()
     car = None
 
+    dvs_form = DvsForm()
     batareya_form = BatareyaForm()
     perednij_form = PerednijDvigatelForm()
     zadnij_form = ZadnijDvigatelForm()
@@ -406,6 +409,10 @@ def agregaty_view(request):
             "model": car.model
         })
 
+        dvs_form = DvsForm(initial={
+            "dvs": car.dvs
+        })
+        
         batareya_form = BatareyaForm(initial={
             "batareya": car.batareya
         })
@@ -432,7 +439,7 @@ def agregaty_view(request):
                 ).first()
 
                 if car:
-                    return redirect(f"/agregaty/?car_id={car.id}")
+                    return redirect(f"/agregaty/?car_id={car.id}&focus=dvs")
                 else:
                     messages.error(request, "Машина с таким VIN не найдена.")
 
@@ -442,7 +449,29 @@ def agregaty_view(request):
 
             car = get_object_or_404(Avtomobili, id=car_id_post)
 
-            if component == "batareya":
+            if component == "dvs":
+                if car.dvs and not can_edit_aggregates(request.user):
+                    messages.error(request, "ДВС уже привязан. Изменение доступно только начальнику.")
+                    return redirect(f"/agregaty/?car_id={car.id}")
+
+                dvs_form = DvsForm(request.POST)
+
+                if dvs_form.is_valid():
+                    new_value = dvs_form.cleaned_data["dvs"]
+
+                    bind_car_component(
+                        car=car,
+                        user=request.user,
+                        field_name="dvs",
+                        new_value=new_value,
+                        user_field="dvs_kto",
+                        date_field="dvs_kogda",
+                    )
+
+                    messages.success(request, "ДВС сохранён.")
+                    return redirect(f"/agregaty/?car_id={car.id}&focus=perednij_dvigatel")
+
+            elif component == "batareya":
                 if car.batareya and not can_edit_aggregates(request.user):
                     messages.error(request, "Батарея уже привязана. Изменение доступно только начальнику.")
                     return redirect(f"/agregaty/?car_id={car.id}")
@@ -462,7 +491,7 @@ def agregaty_view(request):
                     )
 
                     messages.success(request, "Батарея сохранена.")
-                    return redirect(f"/agregaty/?car_id={car.id}")
+                    return redirect(f"/agregaty/?car_id={car.id}&focus=clear")
 
             elif component == "perednij_dvigatel":
                 if car.perednij_dvigatel and not can_edit_aggregates(request.user):
@@ -484,7 +513,7 @@ def agregaty_view(request):
                     )
 
                     messages.success(request, "Передний двигатель сохранён.")
-                    return redirect(f"/agregaty/?car_id={car.id}")
+                    return redirect(f"/agregaty/?car_id={car.id}&focus=zadnij_dvigatel")
 
             elif component == "zadnij_dvigatel":
                 if car.zadnij_dvigatel and not can_edit_aggregates(request.user):
@@ -506,14 +535,16 @@ def agregaty_view(request):
                     )
 
                     messages.success(request, "Задний двигатель сохранён.")
-                    return redirect(f"/agregaty/?car_id={car.id}")
+                    return redirect(f"/agregaty/?car_id={car.id}&focus=batareya")
 
     return render(request, "defects_app/agregaty.html", {
         "form": form,
         "car": car,
+        "dvs_form": dvs_form,
         "batareya_form": batareya_form,
         "perednij_form": perednij_form,
         "zadnij_form": zadnij_form,
         "vin_prefixes": VIN_PREFIXES,
         "is_manager": is_manager,
+        "can_edit_aggregate_fields": can_edit_aggregate_fields,
     })

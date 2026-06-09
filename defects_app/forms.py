@@ -226,6 +226,17 @@ class GlonassForm(forms.Form):
         return value
 
 
+class DvsForm(forms.Form):
+    dvs = forms.CharField(
+        label="ДВС",
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Отсканируйте или введите номер ДВС"
+        })
+    )
+
+
 class BatareyaForm(forms.Form):
     batareya = forms.CharField(
         label="Батарея",

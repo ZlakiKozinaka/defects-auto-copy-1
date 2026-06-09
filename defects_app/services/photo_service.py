@@ -113,8 +113,18 @@ def save_container_receipt_photos(receipt, request):
 
 def save_container_car_photos(container_car, request):
     photos = request.FILES.getlist("photos")
-
+    existing_original_names = set(
+        container_car.photos.exclude(original_name__isnull=True)
+        .exclude(original_name="")
+        .values_list("original_name", flat=True)
+    )
+    skipped_count = 0
+   
     for uploaded_file in photos:
+        if uploaded_file.name in existing_original_names:
+            skipped_count += 1
+            continue
+        
         try:
             image = Image.open(uploaded_file)
             image = ImageOps.exif_transpose(image)
@@ -149,9 +159,16 @@ def save_container_car_photos(container_car, request):
 
             photo.file_size = photo.image.size
             photo.save(update_fields=["file_size"])
+            existing_original_names.add(uploaded_file.name)
 
         except Exception as e:
             messages.error(
                 request,
                 f"Не удалось обработать фото машины: {uploaded_file.name}. Ошибка: {e}"
             )
+
+    if skipped_count:
+        messages.info(
+            request,
+            f"Повторные фото машины пропущены: {skipped_count}."
+        )

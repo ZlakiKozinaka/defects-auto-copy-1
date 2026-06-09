@@ -107,6 +107,7 @@ def print_sgp_report_view(request, car_id):
     aggregates = [
         {"name": "Телематика", "value": car.telematika or ""},
         {"name": "Глонасс", "value": car.glonass or ""},
+        {"name": "ДВС", "value": car.dvs or ""},
         {"name": "Батарея", "value": car.batareya or ""},
         {"name": "Передний двигатель", "value": car.perednij_dvigatel or ""},
         {"name": "Задний двигатель", "value": car.zadnij_dvigatel or ""},
@@ -2404,7 +2405,7 @@ def export_full_cars_view(request):
 
                 car.perednij_dvigatel or "",
                 car.zadnij_dvigatel or "",
-                "",
+                car.dvs or "",
 
                 "",
                 car.glonass or "",

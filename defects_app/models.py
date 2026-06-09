@@ -111,6 +111,9 @@ class Avtomobili(models.Model):
     glonass_sn = models.CharField(max_length=50, blank=True, null=True, verbose_name="Серийный номер")
     glonass_imei = models.CharField(max_length=50, blank=True, null=True, verbose_name="IMEI Глонасс")
     glonass_iccid = models.CharField(max_length=50, blank=True, null=True, verbose_name="ICCID Глонасс")
+    dvs = models.CharField(max_length=100, blank=True, null=True, verbose_name="ДВС")
+    dvs_kto = models.CharField(max_length=150, blank=True, null=True, verbose_name="Привязал ДВС")
+    dvs_kogda = models.DateTimeField(blank=True, null=True, verbose_name="Дата привязки ДВС")
     batareya = models.CharField(max_length=150, blank=True, null=True, verbose_name="Батарея")
     batareya_kto = models.CharField(max_length=150, blank=True, null=True, verbose_name="Привязал батарею")
     batareya_kogda = models.DateTimeField(blank=True, null=True, verbose_name="Дата привязки батареи")
@@ -560,7 +563,13 @@ class ContainerCar(models.Model):
 
     class Meta:
         ordering = ["id"]
-
+        constraints = [
+            models.UniqueConstraint(
+                fields=["receipt", "avto"],
+                name="unique_container_car_per_receipt",
+            ),
+        ]
+    
     def __str__(self):
         return f"{self.avto.vin} -> {self.receipt.container.number}"
     

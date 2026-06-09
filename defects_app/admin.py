@@ -9,11 +9,123 @@ admin.site.register(Oblasti)
 admin.site.register(Greydy)
 admin.site.register(Otvetstvennye)
 admin.site.register(Stancii)
-admin.site.register(Defekty)
 admin.site.register(StatusAvto)
-admin.site.register(Avtomobili)
-admin.site.register(PlanovyeVin)
 admin.site.register(DefectPhoto)
+
+
+@admin.register(Avtomobili)
+class AvtomobiliAdmin(admin.ModelAdmin):
+    list_display = (
+        "vin",
+        "model",
+        "data_sozdaniya",
+        "kto_sozdal",
+        "dvs",
+        "perednij_dvigatel",
+        "zadnij_dvigatel",
+        "batareya",
+    )
+    search_fields = (
+        "vin",
+        "model__nazvanie",
+        "station1_sequence_number",
+        "kto_sozdal",
+        "telematika",
+        "glonass",
+        "glonass_sn",
+        "glonass_imei",
+        "glonass_iccid",
+        "dvs",
+        "perednij_dvigatel",
+        "zadnij_dvigatel",
+        "batareya",
+    )
+    list_filter = (
+        "model",
+        "created_on_station_1",
+        "proshla_bestenevaya",
+        "data_sozdaniya",
+    )
+    ordering = ("-data_sozdaniya",)
+
+
+@admin.register(Defekty)
+class DefektyAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "avto",
+        "data",
+        "smena",
+        "mesto",
+        "tip",
+        "oblast",
+        "greyd",
+        "otvetstvennyj",
+        "stanciya",
+        "ustraneno",
+        "proveren",
+        "kto_sozdal",
+    )
+    search_fields = (
+        "avto__vin",
+        "kommentarij",
+        "kto_sozdal",
+        "kto_ustranil",
+        "kto_razreshil",
+        "tip__nazvanie",
+        "oblast__nazvanie",
+        "mesto__nazvanie",
+        "stanciya__nazvanie",
+        "otvetstvennyj__nazvanie",
+    )
+    list_filter = (
+        "smena",
+        "mesto",
+        "tip",
+        "oblast",
+        "greyd",
+        "otvetstvennyj",
+        "stanciya",
+        "ustraneno",
+        "proveren",
+        "data",
+    )
+    ordering = ("-data",)
+
+
+@admin.register(PlanovyeVin)
+class PlanovyeVinAdmin(admin.ModelAdmin):
+    list_display = (
+        "vin",
+        "model",
+        "nomer_partii",
+        "nomer_lota",
+        "cvet_kuzova",
+        "cvet_salona",
+        "komplektaciya",
+        "otts",
+        "kto_zagruzil",
+        "data_zagruzki",
+    )
+    search_fields = (
+        "vin",
+        "model",
+        "nomer_partii",
+        "nomer_lota",
+        "cvet_kuzova",
+        "cvet_salona",
+        "komplektaciya",
+        "otts",
+        "file_name",
+        "kto_zagruzil",
+    )
+    list_filter = (
+        "model",
+        "nomer_partii",
+        "nomer_lota",
+        "data_zagruzki",
+    )
+    ordering = ("-data_zagruzki",)
 
 @admin.register(StationOnePrintBufferEntry)
 class StationOnePrintBufferEntryAdmin(admin.ModelAdmin):
