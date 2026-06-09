@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from defects_app.forms import ContainerReceiptForm
 
@@ -36,6 +37,9 @@ def container_receipts_view(request):
     search_container_number = ""
     search_month = today.strftime("%Y-%m")
     search_was_submitted = False
+    all_receipts_results = []
+    all_receipts_date = today
+    all_receipts_was_submitted = False
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -112,6 +116,18 @@ def container_receipts_view(request):
                     f"Приемка контейнера сохранена. Акт №{receipt.daily_number}."
                 )
                 return redirect("container_receipts")
+            
+        elif action == "all_receipts_by_day":
+            all_receipts_was_submitted = True
+            all_receipts_date_value = request.POST.get("all_receipts_date", today.isoformat())
+            selected_date = parse_date(all_receipts_date_value) or today
+            all_receipts_date = selected_date
+
+            all_receipts_results = ContainerReceipt.objects.select_related(
+                "container"
+            ).filter(
+                receipt_date=selected_date
+            ).order_by("-created_at")
 
         elif action == "search":
             search_was_submitted = True
@@ -140,6 +156,9 @@ def container_receipts_view(request):
         "search_container_number": search_container_number,
         "search_month": search_month,
         "search_was_submitted": search_was_submitted,
+        "all_receipts_results": all_receipts_results,
+        "all_receipts_date": all_receipts_date,
+        "all_receipts_was_submitted": all_receipts_was_submitted,
     })
 
 
@@ -170,7 +189,8 @@ def container_receipt_detail_view(request, receipt_id):
         ).first()
 
         defects = Defekty.objects.filter(
-            avto=car
+            avto=car,
+            mesto_id=13,
         ).select_related(
             "tip",
             "oblast",
@@ -238,7 +258,8 @@ def print_container_receipt_view(request, receipt_id):
         plan_vin = PlanovyeVin.objects.filter(vin=car.vin).first()
 
         defects = Defekty.objects.filter(
-            avto=car
+            avto=car,
+            mesto_id=13,
         ).select_related(
             "tip",
             "oblast",
