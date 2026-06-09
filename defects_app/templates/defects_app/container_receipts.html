@@ -210,6 +210,7 @@
             <div class="row">
                 <button type="button" class="btn" onclick="openSearchModal()">Найти</button>
                 <button type="button" class="btn" onclick="openCreateBlock()">Создать</button>
+                <button type="button" class="btn" onclick="openAllReceiptsModal()">Все контейнера</button>
             </div>
         </div>
 
@@ -339,6 +340,69 @@
 
     </div>
 
+
+    <div id="allReceiptsModal" class="modal-overlay" {% if all_receipts_was_submitted %}style="display:flex;"{% endif %}>
+        <div class="modal-window">
+            <h3>Все контейнера за день</h3>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="all_receipts_by_day">
+
+                <div class="row">
+                    <div class="field">
+                        <label>Выберите день</label>
+                        <input type="date" name="all_receipts_date" class="form-control" value="{{ all_receipts_date|date:'Y-m-d' }}">
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn">Найти</button>
+                        <button type="button" class="btn" onclick="closeAllReceiptsModal()">Закрыть</button>
+                    </div>
+                </div>
+            </form>
+
+            {% if all_receipts_was_submitted %}
+                <h3>Контейнера за {{ all_receipts_date|date:"d.m.Y" }}</h3>
+
+                {% if all_receipts_results %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>№ акта</th>
+                                <th>Дата</th>
+                                <th>Контейнер</th>
+                                <th>Машина</th>
+                                <th>Кем создан</th>
+                                <th>Когда создан</th>
+                                <th>Открыть</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in all_receipts_results %}
+                                <tr>
+                                    <td>{{ receipt.daily_number }}</td>
+                                    <td>{{ receipt.receipt_date|date:"d.m.Y" }}</td>
+                                    <td>{{ receipt.container.number }}</td>
+                                    <td>{{ receipt.vehicle_number }}</td>
+                                    <td>{{ receipt.created_by }}</td>
+                                    <td>{{ receipt.created_at|date:"d.m.Y H:i:s" }}</td>
+                                    <td>
+                                        <a class="btn" href="{% url 'container_receipt_detail' receipt.id %}">
+                                            Открыть
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>За выбранный день приемки не найдены.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
     <div id="searchModal" class="modal-overlay" {% if search_was_submitted %}style="display:flex;"{% endif %}>
         <div class="modal-window">
             <h3>Поиск приемки контейнера</h3>
@@ -414,6 +478,20 @@
 
         function closeSearchModal() {
             const modal = document.getElementById("searchModal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function openAllReceiptsModal() {
+            const modal = document.getElementById("allReceiptsModal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeAllReceiptsModal() {
+            const modal = document.getElementById("allReceiptsModal");
             if (modal) {
                 modal.style.display = "none";
             }
