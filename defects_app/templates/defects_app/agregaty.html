@@ -87,6 +87,13 @@
             cursor: not-allowed;
         }
 
+        .form-control:disabled,
+        input:disabled {
+            background: #e5e5e5;
+            color: #666;
+            cursor: not-allowed;
+        }
+                
         .message {
             padding: 12px;
             border-radius: 8px;
@@ -139,8 +146,14 @@
 
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
         }
 
         .card {
@@ -230,7 +243,7 @@
                         Найти
                     </button>
 
-                    <button type="button" class="btn" onclick="clearForm()">
+                    <button type="button" class="btn" id="clear-button" onclick="clearForm()">
                         Очистить
                     </button>
                 </div>
@@ -256,6 +269,48 @@
 
             <div class="card">
                 <div class="card-title">
+                    ДВС
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="action" value="bind">
+                    <input type="hidden" name="component" value="dvs">
+                    <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                    <div class="field">
+                        {{ dvs_form.dvs }}
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        {% if car.dvs and not can_edit_aggregate_fields %}
+                            <button type="button" class="btn disabled-btn" disabled>
+                                Привязать
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn">
+                                {% if car.dvs and can_edit_aggregate_fields %}
+                                    Сохранить изменения
+                                {% else %}
+                                    Привязать
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+
+                {% if car.dvs %}
+                    <div class="info-block">
+                        <p><strong>Текущее значение:</strong> {{ car.dvs }}</p>
+                        <p><strong>Кто привязал:</strong> {{ car.dvs_kto|default:"" }}</p>
+                        <p><strong>Дата:</strong> {{ car.dvs_kogda|date:"d.m.Y H:i:s"|default:"" }}</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <div class="card-title">
                     Передний двигатель
                 </div>
 
@@ -271,13 +326,13 @@
                     </div>
 
                     <div style="margin-top:15px;">
-                        {% if car.perednij_dvigatel and not is_manager %}
-                            <button type="button" class="btn disabled-btn">
+                        {% if car.perednij_dvigatel and not can_edit_aggregate_fields %}
+                            <button type="button" class="btn disabled-btn" disabled>
                                 Привязать
                             </button>
                         {% else %}
                             <button type="submit" class="btn">
-                                {% if car.perednij_dvigatel and is_manager %}
+                                {% if car.perednij_dvigatel and can_edit_aggregate_fields %}
                                     Сохранить изменения
                                 {% else %}
                                     Привязать
@@ -292,6 +347,48 @@
                         <p><strong>Текущее значение:</strong> {{ car.perednij_dvigatel }}</p>
                         <p><strong>Кто привязал:</strong> {{ car.perednij_dvigatel_kto|default:"" }}</p>
                         <p><strong>Дата:</strong> {{ car.perednij_dvigatel_kogda|date:"d.m.Y H:i:s"|default:"" }}</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    Задний двигатель <span style="font-size: 14px; font-weight: normal;">(необязательно для 2WD)</span>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="action" value="bind">
+                    <input type="hidden" name="component" value="zadnij_dvigatel">
+                    <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                    <div class="field">
+                        {{ zadnij_form.zadnij_dvigatel }}
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        {% if car.zadnij_dvigatel and not can_edit_aggregate_fields %}
+                            <button type="button" class="btn disabled-btn" disabled>
+                                Привязать
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn">
+                                {% if car.zadnij_dvigatel and can_edit_aggregate_fields %}
+                                    Сохранить изменения
+                                {% else %}
+                                    Привязать
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+
+                {% if car.zadnij_dvigatel %}
+                    <div class="info-block">
+                        <p><strong>Текущее значение:</strong> {{ car.zadnij_dvigatel }}</p>
+                        <p><strong>Кто привязал:</strong> {{ car.zadnij_dvigatel_kto|default:"" }}</p>
+                        <p><strong>Дата:</strong> {{ car.zadnij_dvigatel_kogda|date:"d.m.Y H:i:s"|default:"" }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -313,13 +410,13 @@
                     </div>
 
                     <div style="margin-top:15px;">
-                        {% if car.batareya and not is_manager %}
-                            <button type="button" class="btn disabled-btn">
+                        {% if car.batareya and not can_edit_aggregate_fields %}
+                            <button type="button" class="btn disabled-btn" disabled>
                                 Привязать
                             </button>
                         {% else %}
                             <button type="submit" class="btn">
-                                {% if car.batareya and is_manager %}
+                                {% if car.batareya and can_edit_aggregate_fields %}
                                     Сохранить изменения
                                 {% else %}
                                     Привязать
@@ -334,48 +431,6 @@
                         <p><strong>Текущее значение:</strong> {{ car.batareya }}</p>
                         <p><strong>Кто привязал:</strong> {{ car.batareya_kto|default:"" }}</p>
                         <p><strong>Дата:</strong> {{ car.batareya_kogda|date:"d.m.Y H:i:s"|default:"" }}</p>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="card">
-                <div class="card-title">
-                    Задний двигатель
-                </div>
-
-                <form method="post">
-                    {% csrf_token %}
-
-                    <input type="hidden" name="action" value="bind">
-                    <input type="hidden" name="component" value="zadnij_dvigatel">
-                    <input type="hidden" name="car_id" value="{{ car.id }}">
-
-                    <div class="field">
-                        {{ zadnij_form.zadnij_dvigatel }}
-                    </div>
-
-                    <div style="margin-top:15px;">
-                        {% if car.zadnij_dvigatel and not is_manager %}
-                            <button type="button" class="btn disabled-btn">
-                                Привязать
-                            </button>
-                        {% else %}
-                            <button type="submit" class="btn">
-                                {% if car.zadnij_dvigatel and is_manager %}
-                                    Сохранить изменения
-                                {% else %}
-                                    Привязать
-                                {% endif %}
-                            </button>
-                        {% endif %}
-                    </div>
-                </form>
-
-                {% if car.zadnij_dvigatel %}
-                    <div class="info-block">
-                        <p><strong>Текущее значение:</strong> {{ car.zadnij_dvigatel }}</p>
-                        <p><strong>Кто привязал:</strong> {{ car.zadnij_dvigatel_kto|default:"" }}</p>
-                        <p><strong>Дата:</strong> {{ car.zadnij_dvigatel_kogda|date:"d.m.Y H:i:s"|default:"" }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -397,7 +452,69 @@
 
 <script>
     initVinLogic("id_vin", "id_model", "vin-boxes");
-    initScannerLayoutFix(["#id_perednij_dvigatel", "#id_batareya", "#id_zadnij_dvigatel"]);
+    initScannerLayoutFix(["#id_dvs", "#id_perednij_dvigatel", "#id_zadnij_dvigatel", "#id_batareya"]);
+
+    {% if car and not can_edit_aggregate_fields %}
+        {% if car.dvs %}
+            lockAggregateInput("id_dvs");
+        {% endif %}
+        {% if car.perednij_dvigatel %}
+            lockAggregateInput("id_perednij_dvigatel");
+        {% endif %}
+        {% if car.zadnij_dvigatel %}
+            lockAggregateInput("id_zadnij_dvigatel");
+        {% endif %}
+        {% if car.batareya %}
+            lockAggregateInput("id_batareya");
+        {% endif %}
+    {% endif %}
+
+    focusRequestedControl();
+
+    function lockAggregateInput(inputId) {
+        const input = document.getElementById(inputId);
+
+        if (input) {
+            input.disabled = true;
+        }
+    }
+
+    function focusRequestedControl() {
+        const params = new URLSearchParams(window.location.search);
+        const defaultFocusTarget = "{% if car %}dvs{% else %}vin{% endif %}";
+        const focusTarget = params.get("focus") || defaultFocusTarget;
+        const focusMap = {
+            vin: "id_vin",
+            dvs: "id_dvs",
+            perednij_dvigatel: "id_perednij_dvigatel",
+            zadnij_dvigatel: "id_zadnij_dvigatel",
+            batareya: "id_batareya",
+            clear: "clear-button",
+        };
+        const elementId = focusMap[focusTarget];
+        const element = elementId ? document.getElementById(elementId) : null;
+
+        if (element && !element.disabled) {
+            element.focus();
+            return;
+        }
+
+        if (focusTarget === "clear") {
+            return;
+        }
+
+        const sequence = ["dvs", "perednij_dvigatel", "zadnij_dvigatel", "batareya", "clear"];
+        const startIndex = Math.max(sequence.indexOf(focusTarget), 0);
+
+        for (const fallbackTarget of sequence.slice(startIndex + 1)) {
+            const fallbackElement = document.getElementById(focusMap[fallbackTarget]);
+
+            if (fallbackElement && !fallbackElement.disabled) {
+                fallbackElement.focus();
+                return;
+            }
+        }
+    }
 
     function clearForm() {
         window.location.href = "/agregaty/";
