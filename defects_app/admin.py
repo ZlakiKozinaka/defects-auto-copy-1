@@ -281,3 +281,149 @@ class ContainerCarAdmin(admin.ModelAdmin):
     list_filter = (
         "accepted_at",
     )
+
+@admin.register(WmsLot)
+class WmsLotAdmin(admin.ModelAdmin):
+    list_display = ("id", "lot_number", "display_name", "uploaded_by", "uploaded_at", "is_active")
+    search_fields = ("lot_number", "display_name", "uploaded_by", "comment")
+    list_filter = ("is_active", "uploaded_at")
+    ordering = ("-uploaded_at",)
+
+
+@admin.register(WmsContainer)
+class WmsContainerAdmin(admin.ModelAdmin):
+    list_display = ("id", "container_number", "lot", "seal_number", "existing_container")
+    search_fields = ("container_number", "lot__lot_number", "seal_number")
+    list_filter = ("lot",)
+
+
+@admin.register(WmsCase)
+class WmsCaseAdmin(admin.ModelAdmin):
+    list_display = ("id", "case_number", "container")
+    search_fields = ("case_number", "container__container_number", "container__lot__lot_number")
+    list_filter = ("container__lot",)
+
+
+@admin.register(WmsBox)
+class WmsBoxAdmin(admin.ModelAdmin):
+    list_display = ("id", "box_number", "case")
+    search_fields = ("box_number", "case__case_number", "case__container__container_number")
+    list_filter = ("case__container__lot",)
+
+
+@admin.register(WmsBoxItem)
+class WmsBoxItemAdmin(admin.ModelAdmin):
+    list_display = ("id", "part_number", "quantity", "unit", "box")
+    search_fields = ("part_number", "chinese_name", "english_name", "box__box_number", "box__case__case_number")
+    list_filter = ("unit", "box__case__container__lot")
+
+@admin.register(WmsSite)
+class WmsSiteAdmin(admin.ModelAdmin):
+    list_display = ("id", "code", "name", "is_active")
+    search_fields = ("code", "name")
+    list_filter = ("is_active",)
+
+@admin.register(WmsWarehouse)
+class WmsWarehouseAdmin(admin.ModelAdmin):
+    list_display = ("id", "site", "code", "name", "is_active")
+    search_fields = ("site__code", "site__name", "code", "name")
+    list_filter = ("site", "is_active")
+
+
+@admin.register(WmsStorageLine)
+class WmsStorageLineAdmin(admin.ModelAdmin):
+    list_display = ("id", "warehouse", "code", "name", "sort_order", "is_active")
+    search_fields = ("warehouse__name", "warehouse__code", "code", "name")
+    list_filter = ("warehouse", "is_active")
+
+
+@admin.register(WmsStorageCell)
+class WmsStorageCellAdmin(admin.ModelAdmin):
+    list_display = ("id", "address", "line", "column_number", "level_number", "capacity_units", "is_active")
+    search_fields = ("line__code", "line__warehouse__code", "comment")
+    list_filter = ("line__warehouse", "line", "level_number", "is_active")
+
+    def address(self, obj):
+        return obj.address
+
+
+@admin.register(WmsPalletType)
+class WmsPalletTypeAdmin(admin.ModelAdmin):
+    list_display = ("id", "code", "name", "width_units", "is_active")
+    search_fields = ("code", "name")
+    list_filter = ("is_active", "width_units")
+
+@admin.register(WmsStorageUnit)
+class WmsStorageUnitAdmin(admin.ModelAdmin):
+    list_display = ("id", "unit_type", "display_name", "lot", "is_active", "created_by", "created_at")
+    search_fields = (
+        "label",
+        "container__container_number",
+        "container__lot__lot_number",
+        "case__case_number",
+        "case__container__container_number",
+        "box__box_number",
+        "box__case__case_number",
+    )
+    list_filter = ("unit_type", "is_active", "created_at")
+
+@admin.register(WmsPallet)
+class WmsPalletAdmin(admin.ModelAdmin):
+    list_display = ("id", "pallet_number", "pallet_type", "storage_unit", "created_by", "created_at")
+    search_fields = (
+        "pallet_number",
+        "storage_unit__label",
+        "storage_unit__container__container_number",
+        "storage_unit__container__lot__lot_number",
+        "storage_unit__case__case_number",
+        "storage_unit__box__box_number",
+        "created_by",
+    )
+    list_filter = ("pallet_type", "created_at")
+
+
+@admin.register(WmsPalletPlacement)
+class WmsPalletPlacementAdmin(admin.ModelAdmin):
+    list_display = ("id", "pallet", "cell", "position_from", "position_to", "placed_by", "placed_at", "is_active")
+    search_fields = ("pallet__pallet_number", "pallet__container__container_number", "cell__line__code", "placed_by", "removed_by")
+    list_filter = ("is_active", "cell__line", "placed_at", "removed_at")
+
+
+@admin.register(WmsOperation)
+class WmsOperationAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "operation_type",
+        "lot",
+        "container",
+        "case",
+        "cell",
+        "performed_by",
+        "created_at",
+    )
+    search_fields = (
+        "message",
+        "performed_by",
+        "lot__lot_number",
+        "container__container_number",
+        "case__case_number",
+        "cell__line__code",
+    )
+    list_filter = (
+        "operation_type",
+        "created_at",
+        "cell__line",
+    )
+    readonly_fields = (
+        "operation_type",
+        "lot",
+        "container",
+        "case",
+        "pallet",
+        "placement",
+        "cell",
+        "message",
+        "data",
+        "performed_by",
+        "created_at",
+    )

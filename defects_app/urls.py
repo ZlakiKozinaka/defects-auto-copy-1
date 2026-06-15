@@ -1,4 +1,5 @@
 from django.urls import path
+from django.shortcuts import redirect
 from .views import (
     home,
     create_defect,
@@ -67,6 +68,23 @@ from .views import (
     container_receipt_detail_view,
     upload_container_car_photos_view,
     print_container_receipt_view,
+    wms_home_view,
+    wms_lot_upload_view,
+    wms_lot_detail_view,
+    wms_lot_scan_view,
+    wms_container_place_view,
+    wms_storage_map_view,
+    wms_cell_detail_view,
+    wms_remove_placement_view,
+    wms_case_place_view,
+    wms_container_cases_api_view,
+    wms_case_details_api_view,
+    wms_toggle_cell_active_view,
+    wms_case_issue_view,
+    wms_storage_settings_view,
+    wms_login_view,
+    wms_container_labels_view,
+    wms_global_search_view,
 )
 
 urlpatterns = [
@@ -137,4 +155,24 @@ urlpatterns = [
     path("container-receipts/<int:receipt_id>/", container_receipt_detail_view, name="container_receipt_detail"),
     path("container-car/<int:container_car_id>/upload-photos/", upload_container_car_photos_view, name="upload_container_car_photos"),
     path("container-receipts/<int:receipt_id>/print/", print_container_receipt_view, name="print_container_receipt"),
+
+    # WMS склад
+    path("wms/", lambda request: redirect("wms_home", site_code="gzhel"), name="wms_default"),
+    path("wms/<str:site_code>/", wms_home_view, name="wms_home"),
+    path("wms/<str:site_code>/search/", wms_global_search_view, name="wms_global_search"),
+    path("wms/<str:site_code>/lots/upload/", wms_lot_upload_view, name="wms_lot_upload"),
+    path("wms/<str:site_code>/lots/<int:lot_id>/", wms_lot_detail_view, name="wms_lot_detail"),
+    path("wms/<str:site_code>/scan/lot/", wms_lot_scan_view, name="wms_lot_scan"),
+    path("wms/<str:site_code>/containers/<int:container_id>/place/", wms_container_place_view, name="wms_container_place"),
+    path("wms/<str:site_code>/storage-map/", wms_storage_map_view, name="wms_storage_map"),
+    path("wms/<str:site_code>/storage-settings/", wms_storage_settings_view, name="wms_storage_settings"),
+    path("wms/<str:site_code>/cells/<int:cell_id>/", wms_cell_detail_view, name="wms_cell_detail"),
+    path("wms/<str:site_code>/placements/<int:placement_id>/remove/", wms_remove_placement_view, name="wms_remove_placement"),
+    path("wms/<str:site_code>/cases/<int:case_id>/place/", wms_case_place_view, name="wms_case_place"),
+    path("wms/<str:site_code>/api/containers/<int:container_id>/cases/", wms_container_cases_api_view, name="wms_container_cases_api"),
+    path("wms/<str:site_code>/api/cases/<int:case_id>/details/", wms_case_details_api_view, name="wms_case_details_api"),
+    path("wms/<str:site_code>/cells/<int:cell_id>/toggle-active/", wms_toggle_cell_active_view, name="wms_toggle_cell_active"),
+    path("wms/<str:site_code>/cases/<int:case_id>/issue/", wms_case_issue_view, name="wms_case_issue"),
+    path("accounts/wms-login/", wms_login_view, name="wms_login"),
+    path("wms/<str:site_code>/containers/<int:container_id>/labels/", wms_container_labels_view, name="wms_container_labels"),
 ]

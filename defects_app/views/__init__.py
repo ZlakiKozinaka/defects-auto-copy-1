@@ -36,6 +36,7 @@ from defects_app.views.auth_views import (
     department_hub_view,
     department_section_view,
     csrf_failure_view,
+    wms_login_view,
 )
 
 from defects_app.views.report_views import (
@@ -99,4 +100,23 @@ from defects_app.views.container_views import (
     container_receipt_detail_view,
     upload_container_car_photos_view,
     print_container_receipt_view,
+)
+
+from defects_app.views.wms_views import (
+    wms_home_view,
+    wms_lot_upload_view,
+    wms_lot_detail_view,
+    wms_lot_scan_view,
+    wms_container_place_view,
+    wms_storage_map_view,
+    wms_cell_detail_view,
+    wms_remove_placement_view,
+    wms_case_place_view,
+    wms_container_cases_api_view,
+    wms_case_details_api_view,
+    wms_toggle_cell_active_view,
+    wms_case_issue_view,
+    wms_storage_settings_view,
+    wms_container_labels_view,
+    wms_global_search_view,
 )

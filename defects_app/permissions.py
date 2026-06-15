@@ -15,6 +15,14 @@ GROUP_LOG_MANAGER = "Начальник Логистики"
 
 GROUP_PLANNING = "Отдел планирования производства"
 
+GROUP_WMS_GZHEL_WORKER = "Работник склада Гжели"
+GROUP_WMS_GZHEL_MASTER = "Мастер склада Гжели"
+GROUP_WMS_GZHEL_CHIEF = "Начальник склада Гжели"
+
+GROUP_WMS_LIPETSK_WORKER = "Работник склада Липецка"
+GROUP_WMS_LIPETSK_MASTER = "Мастер склада Липецка"
+GROUP_WMS_LIPETSK_CHIEF = "Начальник склада Липецка"
+
 # На будущее (склад/филиалы):
 # GROUP_WAREHOUSE_WORKER = "Работник склада"
 # GROUP_WAREHOUSE_MANAGER = "Начальник склада"
@@ -50,10 +58,91 @@ PERMISSIONS_MAP = {
         GROUP_GLOBAL_MANAGERS,
     },
 
-    # На будущее:
-    # "warehouse.view": {GROUP_WAREHOUSE_WORKER, GROUP_WAREHOUSE_MANAGER, GROUP_GLOBAL_MANAGERS},
-    # "warehouse.receive": {GROUP_WAREHOUSE_WORKER, GROUP_WAREHOUSE_MANAGER, GROUP_GLOBAL_MANAGERS},
-    # "warehouse.issue": {GROUP_WAREHOUSE_MANAGER, GROUP_GLOBAL_MANAGERS},
+    # WMS Гжель
+    "wms.gzhel.view": {
+        GROUP_WMS_GZHEL_WORKER,
+        GROUP_WMS_GZHEL_MASTER,
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.search": {
+        GROUP_WMS_GZHEL_WORKER,
+        GROUP_WMS_GZHEL_MASTER,
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.place": {
+        GROUP_WMS_GZHEL_WORKER,
+        GROUP_WMS_GZHEL_MASTER,
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.issue": {
+        GROUP_WMS_GZHEL_WORKER,
+        GROUP_WMS_GZHEL_MASTER,
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.cancel": {
+        GROUP_WMS_GZHEL_MASTER,
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.import": {
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.map_edit": {
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.gzhel.reports": {
+        GROUP_WMS_GZHEL_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+
+    # WMS Липецк
+    "wms.lipetsk.view": {
+        GROUP_WMS_LIPETSK_WORKER,
+        GROUP_WMS_LIPETSK_MASTER,
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.search": {
+        GROUP_WMS_LIPETSK_WORKER,
+        GROUP_WMS_LIPETSK_MASTER,
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.place": {
+        GROUP_WMS_LIPETSK_WORKER,
+        GROUP_WMS_LIPETSK_MASTER,
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.issue": {
+        GROUP_WMS_LIPETSK_WORKER,
+        GROUP_WMS_LIPETSK_MASTER,
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.cancel": {
+        GROUP_WMS_LIPETSK_MASTER,
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.import": {
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.map_edit": {
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
+    "wms.lipetsk.reports": {
+        GROUP_WMS_LIPETSK_CHIEF,
+        GROUP_GLOBAL_MANAGERS,
+    },
 }
 
 
@@ -101,3 +190,62 @@ def can_create_cars_and_print(user):
 
 def can_view_reports_exports(user):
     return has_permission(user, "reports.view")
+
+def can_view_wms(user):
+    return has_permission(user, "wms.view")
+
+
+def can_import_wms_lot(user):
+    return has_permission(user, "wms.import_lot")
+
+
+def can_place_wms(user):
+    return has_permission(user, "wms.place")
+
+
+def can_move_wms(user):
+    return has_permission(user, "wms.move")
+
+def has_wms_site_permission(user, site_code: str, action: str) -> bool:
+    if not user.is_authenticated:
+        return False
+
+    if is_global_manager(user):
+        return True
+
+    site_code = str(site_code).lower()
+    permission_code = f"wms.{site_code}.{action}"
+
+    return has_permission(user, permission_code)
+
+
+def can_view_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "view")
+
+
+def can_search_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "search")
+
+
+def can_place_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "place")
+
+
+def can_issue_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "issue")
+
+
+def can_cancel_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "cancel")
+
+
+def can_import_wms_site(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "import")
+
+
+def can_edit_wms_map(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "map_edit")
+
+
+def can_view_wms_reports(user, site_code: str) -> bool:
+    return has_wms_site_permission(user, site_code, "reports")

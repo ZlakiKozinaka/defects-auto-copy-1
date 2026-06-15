@@ -608,3 +608,532 @@ class ContainerCarPhoto(models.Model):
 
     def __str__(self):
         return f"Фото приемки кузова {self.container_car.avto.vin}"
+
+class WmsLot(models.Model):
+    site = models.ForeignKey(
+        "WmsSite",
+        on_delete=models.PROTECT,
+        related_name="lots",
+        blank=True,
+        null=True,
+        verbose_name="Площадка",
+    )
+
+    lot_number = models.CharField(max_length=100, verbose_name="Номер лота")
+    display_name = models.CharField(max_length=255, blank=True, verbose_name="Название")
+    source_file = models.FileField(upload_to="wms/lots/%Y/%m/%d/", blank=True, null=True, verbose_name="Исходный Excel-файл")
+    uploaded_by = models.CharField(max_length=150, blank=True, verbose_name="Кто загрузил")
+    uploaded_at = models.DateTimeField(default=timezone.now, verbose_name="Дата загрузки")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+    comment = models.TextField(blank=True, verbose_name="Комментарий")
+
+    class Meta:
+        verbose_name = "WMS лот"
+        verbose_name_plural = "WMS лоты"
+        ordering = ["-uploaded_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["site", "lot_number"],
+                name="unique_wms_lot_per_site",
+            ),
+        ]
+        permissions = [
+            ("wms_view", "Can view WMS"),
+            ("wms_import_lot", "Can import WMS lots"),
+            ("wms_place", "Can place WMS pallets"),
+            ("wms_move", "Can move WMS pallets"),
+            ("wms_admin", "Can administrate WMS"),
+        ]
+
+    def __str__(self):
+        return self.lot_number
+
+
+class WmsContainer(models.Model):
+    lot = models.ForeignKey(WmsLot, on_delete=models.CASCADE, related_name="containers", verbose_name="Лот")
+    container_number = models.CharField(max_length=100, verbose_name="Номер контейнера")
+    seal_number = models.CharField(max_length=100, blank=True, verbose_name="Номер пломбы")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+    existing_container = models.ForeignKey(
+        "Container",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="wms_containers",
+        verbose_name="Связанный контейнер приемки",
+    )
+    comment = models.TextField(blank=True, verbose_name="Комментарий")
+
+    class Meta:
+        verbose_name = "WMS контейнер"
+        verbose_name_plural = "WMS контейнеры"
+        ordering = ["container_number"]
+        constraints = [
+            models.UniqueConstraint(fields=["lot", "container_number"], name="unique_wms_container_per_lot"),
+        ]
+
+    def __str__(self):
+        return f"{self.lot.lot_number} / {self.container_number}"
+
+
+class WmsCase(models.Model):
+    container = models.ForeignKey(WmsContainer, on_delete=models.CASCADE, related_name="cases", verbose_name="Контейнер")
+    case_number = models.CharField(max_length=100, verbose_name="Номер кейса")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "WMS кейс"
+        verbose_name_plural = "WMS кейсы"
+        ordering = ["case_number"]
+        constraints = [
+            models.UniqueConstraint(fields=["container", "case_number"], name="unique_wms_case_per_container"),
+        ]
+
+    def __str__(self):
+        return f"{self.container.container_number} / {self.case_number}"
+
+
+class WmsBox(models.Model):
+    case = models.ForeignKey(WmsCase, on_delete=models.CASCADE, related_name="boxes", verbose_name="Кейс")
+    box_number = models.CharField(max_length=100, verbose_name="Номер коробки")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "WMS коробка"
+        verbose_name_plural = "WMS коробки"
+        ordering = ["box_number"]
+        constraints = [
+            models.UniqueConstraint(fields=["case", "box_number"], name="unique_wms_box_per_case"),
+        ]
+
+    def __str__(self):
+        return f"{self.case.case_number} / {self.box_number}"
+
+
+class WmsBoxItem(models.Model):
+    box = models.ForeignKey(WmsBox, on_delete=models.CASCADE, related_name="items", verbose_name="Коробка")
+    part_number = models.CharField(max_length=150, verbose_name="SAP Part Number")
+    row_number = models.PositiveIntegerField(default=0, verbose_name="Номер строки Excel")
+    chinese_name = models.CharField(max_length=255, blank=True, verbose_name="Китайское наименование")
+    chinese_description = models.TextField(blank=True, verbose_name="Китайское описание")
+    english_name = models.CharField(max_length=255, blank=True, verbose_name="Английское наименование")
+    english_description = models.TextField(blank=True, verbose_name="Английское описание")
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Количество")
+    unit = models.CharField(max_length=50, blank=True, verbose_name="Ед. изм.")
+    gross_weight = models.DecimalField(max_digits=12, decimal_places=3, blank=True, null=True, verbose_name="Вес брутто")
+    net_weight = models.DecimalField(max_digits=12, decimal_places=3, blank=True, null=True, verbose_name="Вес нетто")
+    volume = models.DecimalField(max_digits=12, decimal_places=3, blank=True, null=True, verbose_name="Объем")
+    raw_data = models.JSONField(default=dict, blank=True, verbose_name="Исходная строка Excel")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+
+    class Meta:
+        verbose_name = "WMS позиция коробки"
+        verbose_name_plural = "WMS позиции коробок"
+        ordering = ["part_number", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["box", "part_number", "row_number"], name="unique_wms_item_part_row_per_box"),
+        ]
+
+    def __str__(self):
+        return f"{self.part_number} — {self.quantity}"
+
+class WmsSite(models.Model):
+    code = models.CharField(max_length=50, unique=True, verbose_name="Код площадки")
+    name = models.CharField(max_length=150, verbose_name="Название площадки")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+
+    class Meta:
+        verbose_name = "WMS площадка"
+        verbose_name_plural = "WMS площадки"
+        ordering = ["code"]
+
+    def __str__(self):
+        return self.name
+
+class WmsWarehouse(models.Model):
+    site = models.ForeignKey(
+        WmsSite,
+        on_delete=models.PROTECT,
+        related_name="warehouses",
+        verbose_name="Площадка",
+    )
+    name = models.CharField(max_length=150, verbose_name="Название склада")
+    code = models.CharField(max_length=50, verbose_name="Код склада")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "WMS склад"
+        verbose_name_plural = "WMS склады"
+        ordering = ["site__code", "code"]
+        constraints = [
+            models.UniqueConstraint(fields=["site", "code"], name="unique_wms_warehouse_per_site"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class WmsStorageLine(models.Model):
+    warehouse = models.ForeignKey(WmsWarehouse, on_delete=models.CASCADE, related_name="lines", verbose_name="Склад")
+    code = models.CharField(max_length=10, verbose_name="Код ряда")
+    name = models.CharField(max_length=150, blank=True, verbose_name="Название")
+    sort_order = models.PositiveIntegerField(default=0, verbose_name="Порядок сортировки")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "WMS ряд склада"
+        verbose_name_plural = "WMS ряды склада"
+        ordering = ["warehouse__site__code", "warehouse__code", "sort_order", "code"]
+        constraints = [
+            models.UniqueConstraint(fields=["warehouse", "code"], name="unique_wms_line_per_warehouse"),
+        ]
+
+    def __str__(self):
+        return f"{self.warehouse.code} / {self.code}"
+
+
+class WmsStorageCell(models.Model):
+    line = models.ForeignKey(WmsStorageLine, on_delete=models.CASCADE, related_name="cells", verbose_name="Ряд")
+    column_number = models.PositiveIntegerField(verbose_name="Столбец")
+    level_number = models.PositiveIntegerField(verbose_name="Этаж")
+    capacity_units = models.PositiveIntegerField(default=6, verbose_name="Вместимость, условные единицы")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+    comment = models.TextField(blank=True, verbose_name="Комментарий")
+
+    class Meta:
+        verbose_name = "WMS ячейка"
+        verbose_name_plural = "WMS ячейки"
+        ordering = ["line__sort_order", "line__code", "column_number", "level_number"]
+        constraints = [
+            models.UniqueConstraint(fields=["line", "column_number", "level_number"], name="unique_wms_cell_per_line_column_level"),
+        ]
+
+    @property
+    def address(self):
+        return f"{self.line.code}{self.column_number};{self.level_number}"
+
+    def __str__(self):
+        return self.address
+
+
+class WmsPalletType(models.Model):
+    name = models.CharField(max_length=150, verbose_name="Название")
+    code = models.CharField(max_length=50, unique=True, verbose_name="Код")
+    width_units = models.PositiveIntegerField(verbose_name="Ширина, условные единицы")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "WMS тип поддона"
+        verbose_name_plural = "WMS типы поддонов"
+        ordering = ["code"]
+
+    def __str__(self):
+        return self.name
+
+class WmsStorageUnit(models.Model):
+    UNIT_CONTAINER = "CONTAINER"
+    UNIT_CASE = "CASE"
+    UNIT_BOX = "BOX"
+
+    UNIT_TYPE_CHOICES = [
+        (UNIT_CONTAINER, "Контейнер"),
+        (UNIT_CASE, "Кейс"),
+        (UNIT_BOX, "Коробка"),
+    ]
+
+    unit_type = models.CharField(
+        max_length=30,
+        choices=UNIT_TYPE_CHOICES,
+        verbose_name="Тип складской единицы",
+    )
+
+    container = models.ForeignKey(
+        WmsContainer,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="storage_units",
+        verbose_name="Контейнер",
+    )
+
+    case = models.ForeignKey(
+        WmsCase,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="storage_units",
+        verbose_name="Кейс",
+    )
+
+    box = models.ForeignKey(
+        WmsBox,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="storage_units",
+        verbose_name="Коробка",
+    )
+
+    label = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Метка / номер складской единицы",
+    )
+
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
+    created_by = models.CharField(max_length=150, blank=True, verbose_name="Кто создал")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+
+    class Meta:
+        verbose_name = "WMS складская единица"
+        verbose_name_plural = "WMS складские единицы"
+        ordering = ["unit_type", "label", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["unit_type", "container"],
+                condition=models.Q(container__isnull=False),
+                name="unique_wms_storage_unit_container",
+            ),
+            models.UniqueConstraint(
+                fields=["unit_type", "case"],
+                condition=models.Q(case__isnull=False),
+                name="unique_wms_storage_unit_case",
+            ),
+            models.UniqueConstraint(
+                fields=["unit_type", "box"],
+                condition=models.Q(box__isnull=False),
+                name="unique_wms_storage_unit_box",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    (
+                        models.Q(container__isnull=False) &
+                        models.Q(case__isnull=True) &
+                        models.Q(box__isnull=True)
+                    )
+                    |
+                    (
+                        models.Q(container__isnull=True) &
+                        models.Q(case__isnull=False) &
+                        models.Q(box__isnull=True)
+                    )
+                    |
+                    (
+                        models.Q(container__isnull=True) &
+                        models.Q(case__isnull=True) &
+                        models.Q(box__isnull=False)
+                    )
+                ),
+                name="wms_storage_unit_exactly_one_object",
+            ),
+        ]
+
+    def clean(self):
+        filled = [self.container_id, self.case_id, self.box_id]
+        filled_count = sum(1 for value in filled if value)
+
+        if filled_count != 1:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Складская единица должна ссылаться ровно на один объект: контейнер, кейс или коробку.")
+
+        if self.unit_type == self.UNIT_CONTAINER and not self.container_id:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Для типа 'Контейнер' нужно выбрать контейнер.")
+
+        if self.unit_type == self.UNIT_CASE and not self.case_id:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Для типа 'Кейс' нужно выбрать кейс.")
+
+        if self.unit_type == self.UNIT_BOX and not self.box_id:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Для типа 'Коробка' нужно выбрать коробку.")
+
+    @property
+    def display_name(self):
+        if self.container_id:
+            return self.container.container_number
+        if self.case_id:
+            return self.case.case_number
+        if self.box_id:
+            return self.box.box_number
+        return self.label or f"Складская единица #{self.id}"
+
+    @property
+    def lot(self):
+        if self.container_id:
+            return self.container.lot
+        if self.case_id:
+            return self.case.container.lot
+        if self.box_id:
+            return self.box.case.container.lot
+        return None
+
+    def __str__(self):
+        return f"{self.get_unit_type_display()} — {self.display_name}"
+
+class WmsPallet(models.Model):
+    pallet_type = models.ForeignKey(WmsPalletType, on_delete=models.PROTECT, related_name="pallets", verbose_name="Тип поддона")
+    pallet_number = models.CharField(max_length=100, blank=True, verbose_name="Номер поддона")
+    storage_unit = models.ForeignKey(
+        WmsStorageUnit,
+        on_delete=models.PROTECT,
+        related_name="pallets",
+        verbose_name="Складская единица",
+    )
+    comment = models.TextField(blank=True, verbose_name="Комментарий")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
+    created_by = models.CharField(max_length=150, blank=True, verbose_name="Кто создал")
+
+    class Meta:
+        verbose_name = "WMS поддон"
+        verbose_name_plural = "WMS поддоны"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        number = self.pallet_number or f"#{self.id}"
+        return f"{number} / {self.pallet_type.code}"
+
+
+class WmsPalletPlacement(models.Model):
+    pallet = models.ForeignKey(WmsPallet, on_delete=models.CASCADE, related_name="placements", verbose_name="Поддон")
+    cell = models.ForeignKey(WmsStorageCell, on_delete=models.PROTECT, related_name="placements", verbose_name="Ячейка")
+    position_from = models.PositiveIntegerField(verbose_name="Позиция с")
+    position_to = models.PositiveIntegerField(verbose_name="Позиция по")
+    placed_by = models.CharField(max_length=150, blank=True, verbose_name="Кто разместил")
+    placed_at = models.DateTimeField(default=timezone.now, verbose_name="Когда разместил")
+    removed_by = models.CharField(max_length=150, blank=True, null=True, verbose_name="Кто снял")
+    removed_at = models.DateTimeField(blank=True, null=True, verbose_name="Когда снял")
+    is_active = models.BooleanField(default=True, verbose_name="Активно")
+
+    class Meta:
+        verbose_name = "WMS размещение поддона"
+        verbose_name_plural = "WMS размещения поддонов"
+        ordering = ["-is_active", "cell__line__code", "cell__column_number", "cell__level_number", "position_from"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(position_from__gte=1), name="wms_placement_position_from_gte_1"),
+            models.CheckConstraint(condition=models.Q(position_to__gte=1), name="wms_placement_position_to_gte_1"),
+            models.CheckConstraint(condition=models.Q(position_to__gte=models.F("position_from")), name="wms_placement_position_to_gte_from"),
+            models.UniqueConstraint(fields=["pallet"], condition=models.Q(is_active=True), name="unique_active_wms_placement_per_pallet"),
+        ]
+
+    @property
+    def position_label(self):
+        capacity_units = self.cell.capacity_units
+        width = self.position_to - self.position_from + 1
+
+        if self.position_from == 1:
+            return "Слева"
+
+        if self.position_to == capacity_units:
+            return "Справа"
+
+        center_start = (capacity_units - width) // 2 + 1
+        center_to = center_start + width - 1
+
+        if self.position_from == center_start and self.position_to == center_to:
+            return "По центру"
+
+        return f"Позиция {self.position_from}-{self.position_to}"
+
+    def __str__(self):
+        return f"{self.pallet} -> {self.cell.address} [{self.position_from}-{self.position_to}]"
+    
+class WmsOperation(models.Model):
+    OP_IMPORT_LOT = "IMPORT_LOT"
+    OP_PLACE = "PLACE"
+    OP_REMOVE = "REMOVE"
+    OP_MOVE = "MOVE"
+    OP_REIMPORT_BLOCKED = "REIMPORT_BLOCKED"
+    OP_PICK = "PICK"
+    OP_CLOSE_ITEM = "CLOSE_ITEM"
+    OP_CLOSE_BOX = "CLOSE_BOX"
+    OP_CLOSE_CASE = "CLOSE_CASE"
+    OP_CLOSE_CONTAINER = "CLOSE_CONTAINER"
+    OP_CLOSE_LOT = "CLOSE_LOT"
+
+    OPERATION_CHOICES = [
+        (OP_IMPORT_LOT, "Импорт лота"),
+        (OP_PLACE, "Размещение"),
+        (OP_REMOVE, "Снятие с ячейки"),
+        (OP_MOVE, "Перемещение"),
+        (OP_REIMPORT_BLOCKED, "Повторный импорт заблокирован"),
+        (OP_PICK, "Выдача детали"),
+        (OP_CLOSE_ITEM, "Закрытие позиции"),
+        (OP_CLOSE_BOX, "Закрытие коробки"),
+        (OP_CLOSE_CASE, "Закрытие кейса"),
+        (OP_CLOSE_CONTAINER, "Закрытие контейнера"),
+        (OP_CLOSE_LOT, "Закрытие лота"),
+    ]
+
+    operation_type = models.CharField(
+        max_length=50,
+        choices=OPERATION_CHOICES,
+        verbose_name="Тип операции",
+    )
+
+    lot = models.ForeignKey(
+        WmsLot,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="wms_operations",
+        verbose_name="Лот",
+    )
+
+    container = models.ForeignKey(
+        WmsContainer,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="wms_operations",
+        verbose_name="Контейнер",
+    )
+
+    case = models.ForeignKey(
+        WmsCase,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="wms_operations",
+        verbose_name="Кейс",
+    )
+
+    pallet = models.ForeignKey(
+        WmsPallet,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="operations",
+        verbose_name="Поддон",
+    )
+
+    placement = models.ForeignKey(
+        WmsPalletPlacement,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="operations",
+        verbose_name="Размещение",
+    )
+
+    cell = models.ForeignKey(
+        WmsStorageCell,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="wms_operations",
+        verbose_name="Ячейка",
+    )
+
+    message = models.TextField(blank=True, verbose_name="Описание")
+    data = models.JSONField(default=dict, blank=True, verbose_name="Дополнительные данные")
+    performed_by = models.CharField(max_length=150, blank=True, verbose_name="Кто выполнил")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Когда выполнено")
+
+    class Meta:
+        verbose_name = "WMS операция"
+        verbose_name_plural = "WMS операции"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.get_operation_type_display()} — {self.created_at:%d.%m.%Y %H:%M:%S}"

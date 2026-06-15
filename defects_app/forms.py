@@ -1,6 +1,6 @@
 from django import forms
 import re
-from .models import Avtomobili, Modeli, Smeny
+from .models import Avtomobili, Modeli, Smeny, WmsSite
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
@@ -358,3 +358,16 @@ class ContainerReceiptForm(forms.ModelForm):
 
     def clean_container_number(self):
         return self.cleaned_data["container_number"].strip().upper()
+    
+class WmsLoginForm(AuthenticationForm):
+    site = forms.ModelChoiceField(
+        label="Склад",
+        queryset=WmsSite.objects.filter(is_active=True).order_by("name"),
+        empty_label="Выберите склад",
+    )
+
+    shift = forms.ModelChoiceField(
+        label="Смена",
+        queryset=Smeny.objects.all(),
+        empty_label="Выберите смену",
+    )

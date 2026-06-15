@@ -3,10 +3,11 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 
-from defects_app.forms import CustomLoginForm, ManagerLoginForm
+from defects_app.forms import CustomLoginForm, ManagerLoginForm, WmsLoginForm
 from defects_app.permissions import (
     has_permission,
     is_manager_user,
+    has_wms_site_permission,
 )
 
 def custom_login_view(request):
@@ -165,3 +166,36 @@ def csrf_failure_view(request, reason=""):
     return render(request, "defects_app/csrf_error.html", {
         "reason": reason,
     }, status=403)
+
+def wms_login_view(request):
+    if request.user.is_authenticated:
+        return redirect("wms_home", site_code="gzhel")
+
+    if request.method == "POST":
+        form = WmsLoginForm(request, data=request.POST)
+
+        if form.is_valid():
+            user = form.get_user()
+            site = form.cleaned_data["site"]
+            site_code = site.code.lower()
+            shift = form.cleaned_data["shift"]
+
+            if not has_wms_site_permission(user, site_code, "view"):
+                return render_access_denied(
+                    request,
+                    "У вас нет доступа к выбранному WMS складу."
+                )
+
+            login(request, user)
+            request.session["shift_id"] = shift.id
+            request.session["shift_name"] = shift.nazvanie
+            request.session["wms_site_code"] = site_code
+            request.session["department_key"] = "wms"
+
+            return redirect("wms_home", site_code=site_code)
+    else:
+        form = WmsLoginForm()
+
+    return render(request, "registration/wms_login.html", {
+        "form": form,
+    })
