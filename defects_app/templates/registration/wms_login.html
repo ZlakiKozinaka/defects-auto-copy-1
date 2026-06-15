@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Вход в WMS склад</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f7fb;
+            color: #111827;
+        }
+
+        .topbar {
+            background: #111827;
+            color: #fff;
+            padding: 18px 28px;
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .page {
+            min-height: calc(100vh - 70px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .card {
+            width: 520px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 34px;
+            box-shadow: 0 2px 14px rgba(15, 23, 42, .12);
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 28px;
+            font-size: 32px;
+        }
+
+        label {
+            display: block;
+            margin: 14px 0 6px;
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        input, select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 17px;
+            background: #eef4ff;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 24px;
+            border: 0;
+            border-radius: 10px;
+            padding: 15px;
+            background: #2563eb;
+            color: white;
+            font-size: 20px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .links {
+            margin-top: 22px;
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .links a {
+            color: #475569;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            color: #2563eb;
+        }
+
+        .errorlist {
+            color: #dc2626;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">WMS склад</div>
+
+    <div class="page">
+        <div class="card">
+            <h1>Вход в WMS склад</h1>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <label for="{{ form.username.id_for_label }}">Логин</label>
+                {{ form.username }}
+
+                <label for="{{ form.password.id_for_label }}">Пароль</label>
+                {{ form.password }}
+
+                <label for="{{ form.site.id_for_label }}">Склад</label>
+                {{ form.site }}
+
+                <label for="{{ form.shift.id_for_label }}">Смена</label>
+                {{ form.shift }}
+
+                {{ form.non_field_errors }}
+
+                <button type="submit">Войти</button>
+            </form>
+
+            <div class="links">
+                <a href="{% url 'login' %}">Вход в дефекты</a>
+                <a href="{% url 'home' %}">На главную</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
