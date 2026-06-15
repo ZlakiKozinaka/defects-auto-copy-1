@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}WMS склад{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1f2937; }
+        header { background: #111827; color: #fff; padding: 14px 22px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+        header a { color: #fff; text-decoration: none; font-weight: 700; }
+        main { padding: 22px; }
+        .card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
+        .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+        .storage-map-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(12, minmax(95px, 1fr));
+        }
+        .btn { display: inline-block; border: 0; border-radius: 10px; padding: 11px 16px; background: #2563eb; color: #fff; text-decoration: none; font-weight: 700; cursor: pointer; }
+        .btn.small { padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+        .header-info { margin-left: auto; font-size: 13px; font-weight: 700; }
+        .header-info {
+            margin-left: auto;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logout-btn {
+            background: #dc2626;
+            color: white !important;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            transition: .2s;
+        }
+
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+        .logout-form {
+            margin: 0;
+        }
+
+        .logout-btn {
+            border: 0;
+            background: #dc2626;
+            color: white !important;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+        .btn.secondary { background: #475569; }
+        .btn.danger { background: #dc2626; }
+        input, select, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; }
+        label { display: block; margin: 10px 0 5px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; background: #fff; }
+        th, td { border-bottom: 1px solid #e5e7eb; padding: 9px; text-align: left; vertical-align: top; }
+        .messages { list-style: none; padding: 0; }
+        .messages li { padding: 10px; border-radius: 10px; margin-bottom: 8px; background: #e0f2fe; }
+        .status-free { background: #dcfce7; }
+        .status-partial { background: #fef3c7; }
+        .status-full { background: #fee2e2; }
+        .cell-card { border-radius: 8px; padding: 6px; border: 1px solid #cbd5e1; min-height: 48px; font-size: 12px; }
+        .units { display: flex; gap: 3px; margin-top: 6px; }
+        .unit { width: 13px; height: 13px; border-radius: 3px; background: #bbf7d0; border: 1px solid #94a3b8; font-size: 8px; text-align: center; line-height: 13px; }
+        .unit.busy { background: #f97316; color: #fff; }
+        .status-disabled {
+            background: #e5e7eb;
+            color: #64748b;
+            text-decoration: line-through;
+            opacity: .75;
+        }
+        details { margin-left: 16px; }
+    </style>
+</head>
+<body>
+<header>
+    {% if can_access_gzhel %}
+        <a href="{% url 'wms_home' 'gzhel' %}">WMS Гжель</a>
+    {% endif %}
+
+    {% if can_access_lipetsk %}
+        <a href="{% url 'wms_home' 'lipetsk' %}">WMS Липецк</a>
+    {% endif %}
+
+    {% if site_code %}
+        {% if can_import_current_wms %}
+            <a href="{% url 'wms_lot_upload' site_code %}">Загрузить Excel</a>
+        {% endif %}
+
+        <a href="{% url 'wms_lot_scan' site_code %}">Скан лота</a>
+        <a href="{% url 'wms_storage_map' site_code %}">Карта склада</a>
+
+        {% if can_edit_current_wms_map %}
+            <a href="{% url 'wms_storage_settings' site_code %}">Настройка карты</a>
+        {% endif %}
+    {% endif %}
+
+    {% if can_see_defects_link %}
+        <a href="{% url 'home' %}">DEFECTS</a>
+    {% endif %}
+
+    <div class="header-info">
+        {% if request.session.shift_name %}
+            Смена: {{ request.session.shift_name }} |
+        {% elif request.session.shift_id %}
+            Смена ID: {{ request.session.shift_id }} |
+        {% endif %}
+
+        {% if request.user.is_authenticated %}
+            Пользователь: {{ request.user.username }}
+
+            <form method="post" action="{% url 'logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">Выйти</button>
+            </form>
+        {% endif %}
+    </div>
+</header>
+<main>
+    {% if messages %}<ul class="messages">{% for message in messages %}<li>{{ message }}</li>{% endfor %}</ul>{% endif %}
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

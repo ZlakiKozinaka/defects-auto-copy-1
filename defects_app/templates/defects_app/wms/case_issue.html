@@ -1,0 +1,374 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Кейс {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<style>
+    .case-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .case-title {
+        margin: 0 0 14px;
+        font-size: 34px;
+    }
+
+    .case-meta {
+        display: grid;
+        gap: 8px;
+        font-size: 16px;
+    }
+
+    .search-panel {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .box-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .box-header {
+        width: 100%;
+        border: 0;
+        background: #f8fafc;
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 17px;
+        font-weight: 900;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .box-header:hover {
+        background: #eef2ff;
+    }
+
+    .box-body {
+        display: none;
+        padding: 0 12px 12px;
+    }
+
+    .box-card.open .box-body {
+        display: block;
+    }
+
+    .box-count {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .issue-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .issue-table th:nth-child(1),
+    .issue-table td:nth-child(1) {
+        width: 220px;
+    }
+
+    .issue-table th:nth-child(2),
+    .issue-table td:nth-child(2) {
+        width: 110px;
+        text-align: center;
+    }
+
+    .issue-table th:nth-child(3),
+    .issue-table td:nth-child(3) {
+        width: 80px;
+        text-align: center;
+    }
+
+    .issue-table th:nth-child(4),
+    .issue-table td:nth-child(4) {
+        width: 430px;
+    }
+
+    .issue-table th:nth-child(5),
+    .issue-table td:nth-child(5) {
+        width: auto;
+    }
+
+    .issue-control {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .qty-input {
+        width: 90px !important;
+        height: 38px;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .quick-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .quick-buttons button {
+        border: 0;
+        border-radius: 8px;
+        padding: 8px 9px;
+        background: #e0e7ff;
+        color: #1e3a8a;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .quick-buttons button:hover {
+        background: #c7d2fe;
+    }
+
+    .btn-issue {
+        border: 0;
+        border-radius: 9px;
+        padding: 9px 13px;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .closed-row td {
+        background: #f1f5f9;
+        color: #64748b;
+        text-decoration: line-through;
+    }
+
+    .hidden-by-search {
+        display: none;
+    }
+
+    .empty-search {
+        display: none;
+        padding: 14px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        margin-top: 12px;
+        font-weight: 700;
+    }
+
+    @media (max-width: 1100px) {
+        .issue-table {
+            table-layout: auto;
+        }
+
+        .issue-table th,
+        .issue-table td {
+            width: auto !important;
+        }
+
+        .issue-control {
+            align-items: stretch;
+        }
+    }
+</style>
+
+<div class="card">
+    <div class="case-head">
+        <div>
+            <h1 class="case-title">Кейс {{ case.case_number }}</h1>
+
+            <div class="case-meta">
+                <div><b>Контейнер:</b> {{ container.container_number }}</div>
+                <div><b>Лот:</b> <a href="{% url 'wms_lot_detail' site_code lot.id %}">{{ lot.lot_number }}</a></div>
+
+                {% if active_placement %}
+                    <div>
+                        <b>Адрес:</b>
+                        <a href="{% url 'wms_cell_detail' site_code active_placement.cell.id %}">
+                            {{ active_placement.cell.address }}
+                        </a>
+                        [{{ active_placement.position_from }}-{{ active_placement.position_to }}]
+                    </div>
+                {% else %}
+                    <div><b>Адрес:</b> кейс сейчас не размещён в ячейке</div>
+                {% endif %}
+
+                {% if not case.is_active %}
+                    <div><b>Статус:</b> кейс закрыт</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div>
+            <a class="btn secondary" href="{% url 'wms_lot_detail' site_code lot.id %}">Вернуться в лот</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Содержимое кейса</h2>
+
+    <div class="search-panel">
+        <div>
+            <label>Поиск внутри кейса</label>
+            <input id="caseSearchInput" type="text" placeholder="Коробка или парт-номер">
+        </div>
+        <button class="btn secondary" type="button" onclick="resetCaseSearch()">Сбросить</button>
+    </div>
+
+    <div id="emptySearch" class="empty-search">
+        Ничего не найдено.
+    </div>
+
+    <div style="margin-top: 16px;">
+        {% for box in case.boxes.all %}
+            <div class="box-card open" data-box-card data-search-text="{{ box.box_number|lower }}">
+                <button class="box-header" type="button" onclick="toggleBox(this)">
+                    <span>
+                        Коробка {{ box.box_number }}
+                        {% if not box.is_active %} — закрыта{% endif %}
+                    </span>
+                    <span class="box-count">{{ box.items.all|length }} поз.</span>
+                </button>
+
+                <div class="box-body">
+                    <table class="issue-table">
+                        <tr>
+                            <th>Парт-номер</th>
+                            <th>Остаток</th>
+                            <th>Ед.</th>
+                            <th>Забрать</th>
+                            <th>Описание</th>
+                        </tr>
+
+                        {% for item in box.items.all %}
+                            <tr class="{% if not item.is_active %}closed-row{% endif %}"
+                                data-item-row
+                                data-search-text="{{ box.box_number|lower }} {{ item.part_number|lower }} {{ item.english_name|lower }} {{ item.chinese_name|lower }}">
+                                <td><b>{{ item.part_number }}</b></td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.unit|default:"—" }}</td>
+                                <td>
+                                    {% if item.is_active and box.is_active and case.is_active %}
+                                        <form method="post" class="issue-control">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="item_id" value="{{ item.id }}">
+
+                                            <input
+                                                name="quantity"
+                                                class="qty-input"
+                                                type="number"
+                                                step="1"
+                                                min="1"
+                                                inputmode="numeric"
+                                                placeholder="0"
+                                                required
+                                            >
+
+                                            <div class="quick-buttons">
+                                                <button type="button" onclick="addQty(this, 1)">+1</button>
+                                                <button type="button" onclick="addQty(this, 5)">+5</button>
+                                                <button type="button" onclick="addQty(this, 10)">+10</button>
+                                                <button type="button" onclick="addQty(this, 25)">+25</button>
+                                                <button type="button" onclick="addQty(this, 50)">+50</button>
+                                            </div>
+
+                                            <button class="btn-issue" type="submit">Забрать</button>
+                                        </form>
+                                    {% else %}
+                                        Закрыто
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.english_name }} {{ item.chinese_name }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5">В коробке нет парт-номеров.</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        {% empty %}
+            <p>В кейсе нет коробок.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function toggleBox(button) {
+        const card = button.closest("[data-box-card]");
+        card.classList.toggle("open");
+    }
+
+    function addQty(button, value) {
+        const form = button.closest(".issue-control");
+        const input = form.querySelector(".qty-input");
+        const current = parseInt(input.value || "0", 10);
+
+        input.value = current + value;
+        input.focus();
+    }
+
+    document.querySelectorAll(".qty-input").forEach(function(input) {
+        input.addEventListener("input", function() {
+            this.value = this.value.replace(/[^\d]/g, "");
+        });
+
+        input.addEventListener("keydown", function(event) {
+            if (event.key === "." || event.key === "," || event.key === "-" || event.key === "e") {
+                event.preventDefault();
+            }
+        });
+    });
+
+    const searchInput = document.getElementById("caseSearchInput");
+    const emptySearch = document.getElementById("emptySearch");
+
+    searchInput.addEventListener("input", function() {
+        const query = this.value.trim().toLowerCase();
+        let visibleRows = 0;
+
+        document.querySelectorAll("[data-box-card]").forEach(function(boxCard) {
+            let boxHasVisibleRows = false;
+
+            boxCard.querySelectorAll("[data-item-row]").forEach(function(row) {
+                const text = row.dataset.searchText || "";
+                const matched = !query || text.includes(query);
+
+                row.classList.toggle("hidden-by-search", !matched);
+
+                if (matched) {
+                    visibleRows += 1;
+                    boxHasVisibleRows = true;
+                }
+            });
+
+            boxCard.classList.toggle("hidden-by-search", !boxHasVisibleRows);
+
+            if (query && boxHasVisibleRows) {
+                boxCard.classList.add("open");
+            }
+        });
+
+        emptySearch.style.display = visibleRows ? "none" : "block";
+    });
+
+    function resetCaseSearch() {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input"));
+        searchInput.focus();
+    }
+</script>
+{% endblock %}

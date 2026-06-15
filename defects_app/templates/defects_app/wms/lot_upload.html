@@ -1,0 +1,12 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Загрузка лота WMS{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Загрузить Excel лота — {{ site.name }}</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Загрузить</button>
+    </form>
+</div>
+{% endblock %}

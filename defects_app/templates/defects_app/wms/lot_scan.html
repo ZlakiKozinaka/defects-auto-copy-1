@@ -1,0 +1,13 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Скан лота WMS{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Сканирование лота — {{ site.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.lot_number.label_tag }}
+        {{ form.lot_number }}
+        <p><button class="btn" type="submit">Открыть лот</button></p>
+    </form>
+</div>
+{% endblock %}

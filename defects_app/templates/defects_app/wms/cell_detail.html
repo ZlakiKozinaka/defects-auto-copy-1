@@ -1,0 +1,100 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Ячейка {{ cell.address }}{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Ячейка {{ cell.address }}</h1>
+    {% if can_edit_current_wms_map %}
+        <form method="post" action="{% url 'wms_toggle_cell_active' site_code cell.id %}">
+            {% csrf_token %}
+            {% if cell.is_active %}
+                {% if occupancy.placements %}
+                    <button class="btn danger" type="button" disabled style="opacity:.45; cursor:not-allowed;">
+                        Нельзя отключить: ячейка занята
+                    </button>
+                {% else %}
+                    <button class="btn danger" type="submit">
+                        Сделать ячейку недоступной
+                    </button>
+                {% endif %}
+            {% else %}
+                <button class="btn" type="submit">Сделать ячейку доступной</button>
+            {% endif %}
+        </form>
+    {% endif %}
+    <p>
+        <b>Склад:</b> {{ cell.line.warehouse.name }}
+        |
+        <b>Вместимость:</b> {{ cell.capacity_units }} units
+        |
+        <b>Статус:</b>
+        {% if cell.is_active %}
+            {{ occupancy.status_label }}
+        {% else %}
+            Недоступна для размещения
+        {% endif %}
+    </p>
+    <div class="units">
+        {% for unit in occupancy.units %}<span class="unit {% if unit in occupancy.occupied_units %}busy{% endif %}">{{ unit }}</span>{% endfor %}
+    </div>
+</div>
+<div class="card">
+    <h2>Активные размещения</h2>
+    <table>
+        <tr><th>Контейнер</th><th>Лот</th><th>Поддон</th><th>Позиция</th><th>Когда</th><th></th></tr>
+        {% for placement in occupancy.placements %}
+            <tr>
+                <td>
+                    {% if placement.pallet.storage_unit.case %}
+                        <a href="{% url 'wms_case_issue' site_code placement.pallet.storage_unit.case.id %}">
+                            <b>{{ placement.pallet.storage_unit.case.case_number }}</b>
+                        </a>
+                        <br>
+                        <span style="color:#64748b;font-size:12px;">
+                            Контейнер: {{ placement.pallet.storage_unit.case.container.container_number }}
+                        </span>
+                    {% else %}
+                        {{ placement.pallet.storage_unit.display_name }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if placement.pallet.storage_unit.lot %}
+                        <a href="{% url 'wms_lot_detail' site_code placement.pallet.storage_unit.lot.id %}">
+                            {{ placement.pallet.storage_unit.lot.lot_number }}
+                        </a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ placement.pallet.pallet_type.name }}</td>
+                <td>{{ placement.position_label }} [{{ placement.position_from }}-{{ placement.position_to }}]</td>
+                <td>{{ placement.placed_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    {% if can_cancel_current_wms %}
+                        <form method="post" action="{% url 'wms_remove_placement' site_code placement.id %}">
+                            {% csrf_token %}
+                            <button class="btn danger" type="submit">Освободить</button>
+                        </form>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}<tr><td colspan="6">Активных размещений нет.</td></tr>{% endfor %}
+    </table>
+</div>
+<div class="card">
+    <h2>История</h2>
+    <table>
+        <tr><th>Поддон</th><th>Позиция</th><th>Поставил</th><th>Снял</th><th>Активно</th></tr>
+        {% for placement in history %}
+            <tr>
+                <td>{{ placement.pallet }}</td>
+                <td>[{{ placement.position_from }}-{{ placement.position_to }}]</td>
+                <td>{{ placement.placed_by }} {{ placement.placed_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ placement.removed_by }} {{ placement.removed_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ placement.is_active|yesno:"да,нет" }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

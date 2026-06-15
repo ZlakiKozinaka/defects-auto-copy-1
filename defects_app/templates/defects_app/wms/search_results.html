@@ -1,0 +1,247 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Поиск WMS{% endblock %}
+
+{% block content %}
+<h1>Поиск WMS — {{ site.name }}</h1>
+
+<div class="card">
+    <form method="get" action="{% url 'wms_global_search' site_code %}">
+        <label for="q">Что ищем:</label>
+        <input
+            id="q"
+            type="text"
+            name="q"
+            value="{{ query }}"
+            placeholder="Лот, контейнер, кейс, коробка, парт-номер, ячейка..."
+            autocomplete="off"
+            autofocus
+        >
+        <p><button class="btn" type="submit">Найти</button></p>
+    </form>
+</div>
+
+{% if query %}
+    <div class="card">
+        <h2>Результаты по запросу: {{ query }}</h2>
+        <p>Найдено совпадений: <b>{{ total_results }}</b></p>
+    </div>
+
+    {% if lots %}
+        <div class="card">
+            <h2>Лоты</h2>
+            <table>
+                <tr>
+                    <th>Лот</th>
+                    <th>Название</th>
+                    <th>Дата загрузки</th>
+                    <th>Контейнеров</th>
+                    <th></th>
+                </tr>
+                {% for lot in lots %}
+                    <tr>
+                        <td><b>{{ lot.lot_number }}</b></td>
+                        <td>{{ lot.display_name|default:"—" }}</td>
+                        <td>{{ lot.uploaded_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ lot.containers_total }}</td>
+                        <td>
+                            <a class="btn small" href="{% url 'wms_lot_detail' site_code lot.id %}">
+                                Открыть
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if containers %}
+        <div class="card">
+            <h2>Контейнеры</h2>
+            <table>
+                <tr>
+                    <th>Контейнер</th>
+                    <th>Лот</th>
+                    <th>Пломба</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                {% for container in containers %}
+                    <tr>
+                        <td><b>{{ container.container_number }}</b></td>
+                        <td>
+                            <a href="{% url 'wms_lot_detail' site_code container.lot.id %}">
+                                {{ container.lot.lot_number }}
+                            </a>
+                        </td>
+                        <td>{{ container.seal_number|default:"—" }}</td>
+                        <td>{% if container.is_active %}Активен{% else %}Не активен{% endif %}</td>
+                        <td>
+                            <a class="btn small" href="{% url 'wms_container_place' site_code container.id %}">
+                                Разместить
+                            </a>
+                            <a class="btn small secondary" href="{% url 'wms_container_labels' site_code container.id %}">
+                                Этикетки
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if cases %}
+        <div class="card">
+            <h2>Кейсы</h2>
+            <table>
+                <tr>
+                    <th>Кейс</th>
+                    <th>Контейнер</th>
+                    <th>Лот</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                {% for case in cases %}
+                    <tr>
+                        <td><b>{{ case.case_number }}</b></td>
+                        <td>{{ case.container.container_number }}</td>
+                        <td>
+                            <a href="{% url 'wms_lot_detail' site_code case.container.lot.id %}">
+                                {{ case.container.lot.lot_number }}
+                            </a>
+                        </td>
+                        <td>{% if case.is_active %}Активен{% else %}Не активен{% endif %}</td>
+                        <td>
+                            <a class="btn small" href="{% url 'wms_case_place' site_code case.id %}">
+                                Разместить
+                            </a>
+                            <a class="btn small secondary" href="{% url 'wms_case_issue' site_code case.id %}">
+                                Списание
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if boxes %}
+        <div class="card">
+            <h2>Коробки</h2>
+            <table>
+                <tr>
+                    <th>Коробка</th>
+                    <th>Кейс</th>
+                    <th>Контейнер</th>
+                    <th>Лот</th>
+                    <th>Статус</th>
+                </tr>
+                {% for box in boxes %}
+                    <tr>
+                        <td><b>{{ box.box_number }}</b></td>
+                        <td>{{ box.case.case_number }}</td>
+                        <td>{{ box.case.container.container_number }}</td>
+                        <td>
+                            <a href="{% url 'wms_lot_detail' site_code box.case.container.lot.id %}">
+                                {{ box.case.container.lot.lot_number }}
+                            </a>
+                        </td>
+                        <td>{% if box.is_active %}Активна{% else %}Не активна{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if items %}
+        <div class="card">
+            <h2>Парт-номера / детали</h2>
+            <table>
+                <tr>
+                    <th>Part Number</th>
+                    <th>Кол-во</th>
+                    <th>Ед.</th>
+                    <th>Наименование</th>
+                    <th>Лот</th>
+                    <th>Контейнер</th>
+                    <th>Кейс</th>
+                    <th>Коробка</th>
+                    <th>Размещение</th>
+                    <th></th>
+                </tr>
+                {% for row in items %}
+                    <tr>
+                        <td><b>{{ row.item.part_number }}</b></td>
+                        <td>{{ row.item.quantity }}</td>
+                        <td>{{ row.item.unit|default:"—" }}</td>
+                        <td>
+                            {% if row.item.english_name %}
+                                {{ row.item.english_name }}
+                            {% elif row.item.chinese_name %}
+                                {{ row.item.chinese_name }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'wms_lot_detail' site_code row.lot.id %}">
+                                {{ row.lot.lot_number }}
+                            </a>
+                        </td>
+                        <td>{{ row.container.container_number }}</td>
+                        <td>{{ row.case.case_number }}</td>
+                        <td>{{ row.box.box_number }}</td>
+                        <td>
+                            <b>{{ row.placement_text }}</b><br>
+                            <span style="color:#64748b;">{{ row.placement_type }}</span>
+                        </td>
+                        <td>
+                            <a class="btn small secondary" href="{% url 'wms_case_issue' site_code row.case.id %}">
+                                Открыть кейс
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if cells %}
+        <div class="card">
+            <h2>Ячейки склада</h2>
+            <table>
+                <tr>
+                    <th>Ячейка</th>
+                    <th>Склад</th>
+                    <th>Вместимость</th>
+                    <th>Занято</th>
+                    <th>Свободно</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                {% for row in cells %}
+                    <tr>
+                        <td><b>{{ row.cell.address }}</b></td>
+                        <td>{{ row.cell.line.warehouse.name }}</td>
+                        <td>{{ row.cell.capacity_units }}</td>
+                        <td>{{ row.occupancy.used_units }}</td>
+                        <td>{{ row.occupancy.free_units }}</td>
+                        <td>{% if row.cell.is_active %}Активна{% else %}Отключена{% endif %}</td>
+                        <td>
+                            <a class="btn small" href="{% url 'wms_cell_detail' site_code row.cell.id %}">
+                                Открыть
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+
+    {% if total_results == 0 %}
+        <div class="card">
+            <h2>Ничего не найдено</h2>
+            <p>Проверь номер или попробуй ввести часть значения.</p>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

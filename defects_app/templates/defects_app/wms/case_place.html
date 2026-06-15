@@ -1,0 +1,151 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Размещение кейса {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<style>
+    .suggestions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .suggestion-card {
+        border: 2px solid #cbd5e1;
+        border-radius: 14px;
+        padding: 16px;
+        background: #fff;
+    }
+
+    .suggestion-card.priority-1 {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .suggestion-address {
+        font-size: 26px;
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .suggestion-meta {
+        color: #475569;
+        margin-bottom: 12px;
+    }
+
+    .suggestion-card .btn {
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        padding: 14px;
+    }
+
+    .type-form {
+        margin-bottom: 18px;
+    }
+</style>
+
+<div class="card">
+    <h1>Разместить кейс {{ case.case_number }}</h1>
+
+    <p><b>Контейнер:</b> {{ container.container_number }}</p>
+    <p><b>Лот:</b> <a href="{% url 'wms_lot_detail' site_code lot.id %}">{{ lot.lot_number }}</a></p>
+
+    <form method="get" class="type-form">
+        <label>Тип поддона</label>
+        <select name="pallet_type" class="form-control" onchange="this.form.submit()">
+            {% for value, label in form.fields.pallet_type.choices %}
+                <option value="{{ value }}" {% if selected_pallet_type and selected_pallet_type.id|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selected_pallet_type %}
+        <p>
+            Система подобрала ближайшие свободные места к <b>A1;1</b>
+            для типа поддона <b>{{ selected_pallet_type.name }}</b>.
+        </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Предложенные места</h2>
+
+    {% if suggestions %}
+        <div class="suggestions">
+            {% for suggestion in suggestions %}
+                <div class="suggestion-card priority-{{ forloop.counter }}">
+                    <div class="suggestion-address">
+                        №{{ forloop.counter }} — {{ suggestion.cell.address }}
+                    </div>
+
+                    <div class="suggestion-meta">
+                        Позиция: <b>{{ suggestion.position_label }}</b>
+                        [{{ suggestion.position_from }}-{{ suggestion.position_to }}]
+                        <br>
+                        Занято сейчас:
+                        {{ suggestion.occupied_count }}/{{ suggestion.capacity_units }} units
+                        <br>
+                        После размещения останется:
+                        {{ suggestion.free_after }} units
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <input type="hidden" name="pallet_type" value="{{ selected_pallet_type.id }}">
+                        <input type="hidden" name="selected_place" value="{{ suggestion.cell.id }}|{{ suggestion.position_from }}|{{ suggestion.position_to }}">
+
+                        <label>Номер поддона</label>
+                        <input class="form-control" name="pallet_number" placeholder="Необязательно">
+
+                        <label>Комментарий</label>
+                        <textarea class="form-control" name="comment" rows="2"></textarea>
+
+                        <p>
+                            <button class="btn" type="submit">
+                                Поставил сюда
+                            </button>
+                        </p>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Нет доступных мест для выбранного типа поддона.</p>
+    {% endif %}
+</div>
+<div class="card">
+    <h2>Выбрать место самим</h2>
+
+    <p style="color:#64748b;">
+        Если кейс тяжёлый или его нужно поставить ниже, отсканируйте штрихкод нужной ячейки.
+        Система сама выберет первую свободную позицию внутри этой ячейки.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="manual">
+
+        <label>Тип поддона</label>
+        {{ manual_form.pallet_type }}
+
+        <label>Штрихкод / адрес ячейки</label>
+        {{ manual_form.cell_address }}
+
+        <label>Номер поддона</label>
+        {{ manual_form.pallet_number }}
+
+        <label>Комментарий</label>
+        {{ manual_form.comment }}
+
+        <p>
+            <button class="btn secondary" type="submit">
+                Поставил на отсканированную ячейку
+            </button>
+        </p>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Карта склада WMS{% endblock %}
+{% block content %}
+<style>
+    .map-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: nowrap;
+        margin-bottom: 18px;
+    }
+
+    .map-header h1 {
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .row-nav-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .row-nav {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding: 4px;
+        max-width: 520px;
+    }
+
+    .row-nav::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .row-btn {
+        min-width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #111827;
+        font-weight: 900;
+        text-align: center;
+        text-decoration: none;
+        line-height: 34px;
+        flex: 0 0 auto;
+    }
+
+    .row-btn:hover {
+        background: #dbeafe;
+        border-color: #2563eb;
+    }
+
+    .row-scroll-btn {
+        width: 32px;
+        height: 34px;
+        border: 0;
+        border-radius: 9px;
+        background: #475569;
+        color: white;
+        font-weight: 900;
+        cursor: pointer;
+        flex: 0 0 auto;
+    }
+
+    .row-scroll-btn:hover {
+        background: #334155;
+    }
+
+    .line-anchor {
+        scroll-margin-top: 90px;
+    }
+</style>
+
+<div class="map-header">
+    <h1>Карта склада — {{ site.name }}</h1>
+
+    <div class="row-nav-wrap">
+        <button class="row-scroll-btn" type="button" onclick="scrollRowNav(-1)">‹</button>
+
+        <div class="row-nav" id="rowNav">
+            {% for line_data in map_lines %}
+                <a class="row-btn" href="#row-{{ line_data.line.code }}">
+                    {{ line_data.line.code }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <button class="row-scroll-btn" type="button" onclick="scrollRowNav(1)">›</button>
+    </div>
+</div>
+
+<script>
+    function scrollRowNav(direction) {
+        const nav = document.getElementById("rowNav");
+        nav.scrollBy({
+            left: direction * 220,
+            behavior: "smooth"
+        });
+    }
+</script>
+
+
+{% for line_data in map_lines %}
+<div class="card line-anchor" id="row-{{ line_data.line.code }}">
+    <h2>Ряд {{ line_data.line.code }}</h2>
+    {% for level, cells in line_data.levels.items %}
+        <h3>Этаж {{ level }}</h3>
+        <div class="storage-map-grid">
+            {% for item in cells %}
+                <a class="cell-card {% if not item.cell.is_active %}status-disabled{% else %}status-{{ item.occupancy.status }}{% endif %}" href="{% url 'wms_cell_detail' site_code item.cell.id %}" style="text-decoration:none;color:inherit;">
+                    <b>{{ item.cell.address }}</b><br>
+                    {% if not item.cell.is_active %}
+                        Недоступна<br>
+                    {% else %}
+                        {{ item.occupancy.status_label }}<br>
+                    {% endif %}
+                    {{ item.occupancy.occupied_count }}/{{ item.occupancy.capacity_units }} units
+                    <div class="units">
+                        {% for unit in item.occupancy.units %}<span class="unit {% if unit in item.occupancy.occupied_units %}busy{% endif %}">{{ unit }}</span>{% endfor %}
+                    </div>
+                    {% for placement in item.occupancy.placements %}
+                        <div>{{ placement.pallet.storage_unit.display_name|default:"Поддон" }} [{{ placement.position_from }}-{{ placement.position_to }}]</div>
+                    {% endfor %}
+                </a>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+{% empty %}
+<div class="card">Склад не настроен. Запустите команду seed_wms_storage.</div>
+{% endfor %}
+{% endblock %}

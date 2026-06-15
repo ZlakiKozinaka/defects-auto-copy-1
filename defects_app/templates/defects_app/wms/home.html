@@ -1,0 +1,52 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}WMS склад{% endblock %}
+{% block content %}
+<h1>WMS склад — {{ site.name }}</h1>
+<div class="grid">
+    <div class="card">
+        <h2>Быстрые действия</h2>
+        {% if can_import_current_wms %}
+            <p><a class="btn" href="{% url 'wms_lot_upload' site_code %}">Загрузить Excel лота</a></p>
+        {% endif %}
+        <p><a class="btn secondary" href="{% url 'wms_lot_scan' site_code %}">Сканировать лот</a></p>
+        <p><a class="btn secondary" href="{% url 'wms_storage_map' site_code %}">Открыть карту склада</a></p>
+    </div>
+    <div class="card">
+        <h2>Общий поиск по WMS</h2>
+
+        <form method="get" action="{% url 'wms_global_search' site_code %}">
+            <label for="wms-global-search">Что ищем:</label>
+            <input
+                id="wms-global-search"
+                type="text"
+                name="q"
+                placeholder="Лот, контейнер, кейс, коробка, парт-номер, ячейка..."
+                autocomplete="off"
+                autofocus
+            >
+
+            <p><button class="btn" type="submit">Найти</button></p>
+        </form>
+
+        <p style="color:#64748b; margin-bottom:0;">
+            Можно сканировать или вводить вручную: контейнер, кейс, коробку, SAP Part Number, лот или адрес ячейки.
+        </p>
+    </div>
+</div>
+<div class="card">
+    <h2>Последние загруженные лоты</h2>
+    <table>
+        <tr><th>Лот</th><th>Дата</th><th>Контейнеров</th><th>Файл</th></tr>
+        {% for lot in latest_lots %}
+            <tr>
+                <td><a href="{% url 'wms_lot_detail' site_code lot.id %}">{{ lot.lot_number }}</a></td>
+                <td>{{ lot.uploaded_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ lot.containers_total }}</td>
+                <td>{% if lot.source_file %}<a href="{{ lot.source_file.url }}">скачать</a>{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Пока нет загруженных лотов.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

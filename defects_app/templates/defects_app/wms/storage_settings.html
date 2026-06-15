@@ -1,0 +1,109 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Настройка карты склада{% endblock %}
+
+{% block content %}
+<style>
+    .settings-layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 460px) 1fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .hint {
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 6px;
+    }
+
+    .line-badge {
+        display: inline-flex;
+        min-width: 34px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #dbeafe;
+        color: #1e3a8a;
+        font-weight: 900;
+        margin-right: 8px;
+    }
+
+    @media (max-width: 900px) {
+        .settings-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<h1>Настройка карты склада — {{ site.name }}</h1>
+
+<div class="settings-layout">
+    <div class="card">
+        <h2>Создать стеллаж</h2>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <label>{{ form.line_code.label }}</label>
+            {{ form.line_code }}
+            <div class="hint">Только английская буква: A, B, C, D...</div>
+            {{ form.line_code.errors }}
+
+            <label>{{ form.columns_count.label }}</label>
+            {{ form.columns_count }}
+            {{ form.columns_count.errors }}
+
+            <label>{{ form.levels_count.label }}</label>
+            {{ form.levels_count }}
+            {{ form.levels_count.errors }}
+
+            <label>{{ form.capacity_units.label }}</label>
+            {{ form.capacity_units }}
+            <div class="hint">Обычно 6 units, как сейчас на карте.</div>
+            {{ form.capacity_units.errors }}
+
+            <p style="margin-top:16px;">
+                <button class="btn" type="submit">Создать стеллаж</button>
+            </p>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Созданные стеллажи</h2>
+
+        <table>
+            <tr>
+                <th>Стеллаж</th>
+                <th>Столбцов</th>
+                <th>Этажей</th>
+                <th>Ячеек</th>
+                <th>Статус</th>
+            </tr>
+
+            {% for item in lines %}
+                <tr>
+                    <td>
+                        <span class="line-badge">{{ item.line.code }}</span>
+                        {{ item.line.name }}
+                    </td>
+                    <td>{{ item.columns_count }}</td>
+                    <td>{{ item.levels_count }}</td>
+                    <td>{{ item.cells_count }}</td>
+                    <td>{{ item.line.is_active|yesno:"Активен,Отключен" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">Пока нет созданных стеллажей.</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <p style="margin-top:16px;">
+            <a class="btn secondary" href="{% url 'wms_storage_map' site_code %}">
+                Открыть карту склада
+            </a>
+        </p>
+    </div>
+</div>
+{% endblock %}

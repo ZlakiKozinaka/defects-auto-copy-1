@@ -1,0 +1,27 @@
+{% extends "defects_app/wms/base.html" %}
+{% block title %}Размещение контейнера {{ container.container_number }}{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Разместить контейнер {{ container.container_number }}</h1>
+    <p><b>Лот:</b> <a href="{% url 'wms_lot_detail' site_code container.lot.id %}">{{ container.lot.lot_number }}</a></p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Разместить</button>
+    </form>
+</div>
+{% if occupancy %}
+<div class="card">
+    <h2>Занятость {{ selected_cell.address }}</h2>
+    <p>{{ occupancy.status_label }}: {{ occupancy.occupied_count }} из {{ occupancy.capacity_units }}</p>
+    <div class="units">
+        {% for unit in occupancy.units %}<span class="unit {% if unit in occupancy.occupied_units %}busy{% endif %}">{{ unit }}</span>{% endfor %}
+    </div>
+    <ul>
+    {% for placement in occupancy.placements %}
+        <li>{{ placement.pallet.storage_unit.display_name }} — {{ placement.position_label }} [{{ placement.position_from }}-{{ placement.position_to }}]</li>
+    {% empty %}<li>Ячейка свободна.</li>{% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}
